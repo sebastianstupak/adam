@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ADAM.Domain.Models;
 using HtmlAgilityPack;
 
@@ -27,7 +26,7 @@ public class MerchantSite : IMerchantSite
     }
 
     public virtual string GetUrl() => string.Empty;
-    
+
     public virtual List<MerchantOffer> ExtractOffersFromPage(HtmlNode page) => [];
 
     public virtual async Task<List<MerchantOffer>> GetOffersAsync()

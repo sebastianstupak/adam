@@ -10,7 +10,7 @@ public interface IMerchantSite
 {
     /// <returns>The url of the website to scalp.</returns>
     string GetUrl();
-    
+
     /// <summary>
     /// Per-site implementation of extracting specific elements from the retrieved HTML site.
     /// </summary>
@@ -18,4 +18,6 @@ public interface IMerchantSite
     /// <remarks>For an example implementation, see <see cref="AuparkSite"/>.</remarks>
     /// <returns>A list of processed merchant offers ready to be persisted</returns>
     List<MerchantOffer> ExtractOffersFromPage(HtmlNode page);
+
+    Task<List<MerchantOffer>> GetOffersAsync();
 }
