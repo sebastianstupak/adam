@@ -1,0 +1,35 @@
+services:
+  adam-api:
+    image: adam-api
+    container_name: adam-api
+    build:
+      context: .
+      dockerfile: src/api/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ASPNETCORE_HTTPS_PORTS=8081
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=adamdb;Username=postgres;Password=yourpassword
+    ports:
+      - "8080"
+      - "8081"
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+      - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
+    depends_on:
+      - postgres
+
+  adam-db:
+    image: adam-db
+    container_name: adam-db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=yourpassword
+      - POSTGRES_DB=adamdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - adam-data:/var/lib/postgresql/data
+
+volumes:
+  adam-data:
