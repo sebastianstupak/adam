@@ -3,10 +3,8 @@ using HtmlAgilityPack;
 
 namespace ADAM.API.Sites;
 
-public class AuparkSite(HttpClient httpClient, ILogger logger) : MerchantSite(httpClient, logger)
+public class AuparkSite(ILogger logger) : MerchantSite(logger)
 {
-    private readonly ILogger _logger = logger;
-
     private const string AuparkSiteUrl = "https://www.auparkkosice.sk/obedove-menu";
 
     public override string GetUrl() => AuparkSiteUrl;
@@ -20,7 +18,7 @@ public class AuparkSite(HttpClient httpClient, ILogger logger) : MerchantSite(ht
 
         if (sectionNodes == null)
         {
-            _logger.LogWarning("No sections found with IDs ending in '-section'");
+            Logger.LogWarning("No sections found with IDs ending in '-section'");
             return [];
         }
 
