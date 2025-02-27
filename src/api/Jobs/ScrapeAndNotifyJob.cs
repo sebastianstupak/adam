@@ -1,64 +1,51 @@
-﻿using HtmlAgilityPack;
+﻿using ADAM.API.Sites;
+using ADAM.Domain;
 
 namespace ADAM.API.Jobs;
 
 public class ScrapeAndNotifyJob : IJob
 {
-    private readonly HttpClient _httpClient;
-    private readonly IConfiguration _configuration;
-    private readonly ILogger<ScrapeAndNotifyJob> _logger;
+    private readonly ILogger _logger;
+    private readonly AppDbContext _dbCtx;
 
-    public ScrapeAndNotifyJob(
-        ILogger<ScrapeAndNotifyJob> logger,
-        IConfiguration configuration,
-        HttpClient httpClient)
+    private readonly IList<IMerchantSite> _merchantSites = [];
+
+    public ScrapeAndNotifyJob(ILogger logger, AppDbContext dbCtx)
     {
         _logger = logger;
-        _configuration = configuration;
-        _httpClient = httpClient;
+        _dbCtx = dbCtx;
     }
 
     public async Task ExecuteAsync()
     {
-        var url = _configuration["ProcessedUrl"];
-
+        // TODO: Add (x)Site objects to _merchantSites
+        
         try
         {
-            _logger.LogInformation("Starting web scraping for URL: {Url}", url);
-
-            // Download the HTML content
-            var html = await _httpClient.GetStringAsync(url);
-
-            // Parse HTML using HtmlAgilityPack
-            var htmlDoc = new HtmlDocument();
-            htmlDoc.LoadHtml(html);
-
-            // Example: Extract all paragraph texts
-            var paragraphs = htmlDoc.DocumentNode.SelectNodes("//p");
-            var extractedContent = paragraphs != null
-                ? string.Join("\n", paragraphs.Select(p => p.InnerText))
-                : "No content found";
-
-            /*
-
-            // Store the scraped data
-            var scrapedData = new ScrapedData
+            await Parallel.ForEachAsync(_merchantSites, async (site, ct) =>
             {
-                Url = url,
-                Content = extractedContent,
-                ScrapedAt = DateTime.UtcNow
-            };
+                try
+                {
+                    _logger.LogInformation("Starting web scraping for URL: {Url}", site.GetUrl());
 
-            _dbContext.ScrapedData.Add(scrapedData);
-            await _dbContext.SaveChangesAsync();
-            */
+                    var offers = await site.GetOffersAsync(ct);
+                    _dbCtx.AddRange(offers);
 
-            _logger.LogInformation("Web scraping completed successfully for URL: {Url}", url);
+                    _logger.LogInformation("Web scraping completed successfully for URL: {Url}", site.GetUrl());
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "An error occured while scraping: {URL}", site.GetUrl());
+                }
+            });
+
+            await _dbCtx.SaveChangesAsync();
+            
+            // TODO: Clear _merchantSites
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while scraping URL: {Url}", url);
-            throw;
+            _logger.LogError(ex, "An error occured: {exMsg}\n{exInnerEx}", ex.Message, ex.InnerException);
         }
     }
 }

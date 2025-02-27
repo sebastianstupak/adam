@@ -11,11 +11,11 @@ public class MerchantSite(ILogger logger) : IMerchantSite
 
     public virtual List<MerchantOffer> ExtractOffersFromPage(HtmlNode page) => [];
 
-    public virtual async Task<List<MerchantOffer>> GetOffersAsync()
+    public virtual async Task<List<MerchantOffer>> GetOffersAsync(CancellationToken ct)
     {
         try
         {
-            var htmlDoc = await new HtmlWeb().LoadFromWebAsync(GetUrl());
+            var htmlDoc = await new HtmlWeb().LoadFromWebAsync(GetUrl(), ct);
 
             if (htmlDoc.DocumentNode is null)
             {

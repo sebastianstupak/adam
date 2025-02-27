@@ -19,5 +19,5 @@ public interface IMerchantSite
     /// <returns>A list of processed merchant offers ready to be persisted</returns>
     List<MerchantOffer> ExtractOffersFromPage(HtmlNode page);
 
-    Task<List<MerchantOffer>> GetOffersAsync();
+    Task<List<MerchantOffer>> GetOffersAsync(CancellationToken ct);
 }
