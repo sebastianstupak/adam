@@ -11,7 +11,7 @@ public class MerchantOffer
 
     public required string Meal { get; set; }
 
-    public required decimal Price { get; set; }
+    public decimal? Price { get; set; }
 
     public required string Html { get; set; }
 

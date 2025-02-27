@@ -3,15 +3,21 @@ using HtmlAgilityPack;
 
 namespace ADAM.API.Sites;
 
-public class MerchantSite(ILogger logger) : IMerchantSite
+public class MerchantSite(ILogger<MerchantSite> logger) : IMerchantSite
 {
     protected readonly ILogger Logger = logger;
     
     public virtual string GetUrl() => string.Empty;
 
-    public virtual List<MerchantOffer> ExtractOffersFromPage(HtmlNode page) => [];
+    /// <summary>
+    /// Per-site implementation of extracting specific elements from the retrieved HTML site.
+    /// </summary>
+    /// <param name="page">HtmlNode containing the body of the site to process</param>
+    /// <remarks>For an example implementation, see <see cref="AuparkSite"/>.</remarks>
+    /// <returns>A list of processed merchant offers ready to be persisted</returns>
+    protected virtual List<MerchantOffer> ExtractOffersFromPage(HtmlNode page) => [];
 
-    public virtual async Task<List<MerchantOffer>> GetOffersAsync(CancellationToken ct)
+    public virtual async Task<IEnumerable<MerchantOffer>> GetOffersAsync(CancellationToken ct)
     {
         try
         {

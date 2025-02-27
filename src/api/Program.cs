@@ -5,14 +5,16 @@ using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using ADAM.API.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddLogging();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
-    throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+                       throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
@@ -29,6 +31,8 @@ builder.Services.AddHangfire(config => config
 builder.Services.AddHangfireServer();
 
 builder.Services.AddHttpClient();
+
+builder.Services.AddSites();
 
 var app = builder.Build();
 
@@ -70,15 +74,7 @@ RecurringJob.AddOrUpdate<ScrapeAndNotifyJob>(
     scraper => scraper.ExecuteAsync(),
     Cron.Daily(9, 0));
 
-// // TODO: Temporary for testing
-// const string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:135.0) Gecko/20100101 Firefox/135.0";
-// const string Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
-// const string AcceptEncoding = "gzip,deflate,br";
-// var httpClient = new HttpClient();
-// httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
-// httpClient.DefaultRequestHeaders.Accept.ParseAdd(Accept);
-// httpClient.DefaultRequestHeaders.AcceptEncoding.ParseAdd(AcceptEncoding);
-// {
-//     await new AuparkSite(httpClient, null).GetOffersAsync();
-// }
+// TODO: Temporary for testing
+// using var scope = app.Services.CreateScope();
+// await scope.ServiceProvider.GetService<IJob>().ExecuteAsync();
 app.Run();

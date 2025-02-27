@@ -1,51 +1,45 @@
-﻿using ADAM.API.Sites;
+﻿using System.Collections.Concurrent;
+using ADAM.API.Sites;
 using ADAM.Domain;
+using ADAM.Domain.Models;
 
 namespace ADAM.API.Jobs;
 
-public class ScrapeAndNotifyJob : IJob
+public class ScrapeAndNotifyJob(ILogger<ScrapeAndNotifyJob> logger, AppDbContext dbCtx, IEnumerable<IMerchantSite> merchantSites) : IJob
 {
-    private readonly ILogger _logger;
-    private readonly AppDbContext _dbCtx;
-
-    private readonly IList<IMerchantSite> _merchantSites = [];
-
-    public ScrapeAndNotifyJob(ILogger logger, AppDbContext dbCtx)
-    {
-        _logger = logger;
-        _dbCtx = dbCtx;
-    }
+    private readonly IList<IMerchantSite> _merchantSites = merchantSites.ToList();
 
     public async Task ExecuteAsync()
     {
-        // TODO: Add (x)Site objects to _merchantSites
-        
         try
         {
-            await Parallel.ForEachAsync(_merchantSites, async (site, ct) =>
-            {
-                try
+            var output = new ConcurrentBag<MerchantOffer>();
+
+            await Parallel.ForEachAsync(_merchantSites,
+                async (site, ct) =>
                 {
-                    _logger.LogInformation("Starting web scraping for URL: {Url}", site.GetUrl());
+                    try
+                    {
+                        logger.LogInformation("Starting web scraping for URL: {Url}", site.GetUrl());
 
-                    var offers = await site.GetOffersAsync(ct);
-                    _dbCtx.AddRange(offers);
+                        var offers = await site.GetOffersAsync(ct);
+                        foreach (var offer in offers)
+                            output.Add(offer);
 
-                    _logger.LogInformation("Web scraping completed successfully for URL: {Url}", site.GetUrl());
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "An error occured while scraping: {URL}", site.GetUrl());
-                }
-            });
+                        logger.LogInformation("Web scraping completed successfully for URL: {Url}", site.GetUrl());
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, "An error occured while scraping: {URL}\n{exMsg}", site.GetUrl(), ex.Message);
+                    }
+                });
 
-            await _dbCtx.SaveChangesAsync();
-            
-            // TODO: Clear _merchantSites
+            dbCtx.AddRange(output);
+            await dbCtx.SaveChangesAsync();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occured: {exMsg}\n{exInnerEx}", ex.Message, ex.InnerException);
+            logger.LogError(ex, "An error occured: {exMsg}\n{exInnerEx}", ex.Message, ex.InnerException);
         }
     }
 }

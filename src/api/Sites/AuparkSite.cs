@@ -3,14 +3,15 @@ using HtmlAgilityPack;
 
 namespace ADAM.API.Sites;
 
-public class AuparkSite(ILogger logger) : MerchantSite(logger)
+public class AuparkSite(ILogger<AuparkSite> logger) : MerchantSite(logger)
 {
     private const string AuparkSiteUrl = "https://www.auparkkosice.sk/obedove-menu";
 
     public override string GetUrl() => AuparkSiteUrl;
 
-    public override List<MerchantOffer> ExtractOffersFromPage(HtmlNode page)
+    protected override List<MerchantOffer> ExtractOffersFromPage(HtmlNode page)
     {
+        var utcNow = DateTime.UtcNow;
         var offers = new List<MerchantOffer>();
 
         // Get all sections
@@ -64,8 +65,7 @@ public class AuparkSite(ILogger logger) : MerchantSite(logger)
                         price = parsedPrice;
                     }
                 }
-
-                var utcNow = DateTime.UtcNow;
+                
                 var offer = new MerchantOffer
                 {
                     Name = merchantName,
@@ -86,15 +86,14 @@ public class AuparkSite(ILogger logger) : MerchantSite(logger)
     /// Formats Aupark's section names to friendlier names.
     /// </summary>
     /// <example>tahiti-section --> Tahiti</example>
-    /// <returns></returns>
     private string FormatSectionName(string sectionId)
     {
         var words = sectionId.Split('-');
-        for (int i = 0; i < words.Length; i++)
+        for (var i = 0; i < words.Length; i++)
         {
             if (!string.IsNullOrEmpty(words[i]))
             {
-                words[i] = char.ToUpper(words[i][0]) + words[i].Substring(1);
+                words[i] = char.ToUpper(words[i][0]) + words[i][1..];
             }
         }
 
