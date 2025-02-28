@@ -1,6 +1,6 @@
 using ADAM.Domain.Models;
 
-namespace ADAM.API.Sites;
+namespace ADAM.Application.Sites;
 
 /// <summary>
 /// Used to implement new merchant site scalping (e.g. restaurants).

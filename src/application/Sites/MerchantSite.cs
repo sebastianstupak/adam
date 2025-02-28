@@ -1,7 +1,8 @@
 using ADAM.Domain.Models;
 using HtmlAgilityPack;
+using Microsoft.Extensions.Logging;
 
-namespace ADAM.API.Sites;
+namespace ADAM.Application.Sites;
 
 public class MerchantSite(ILogger<MerchantSite> logger) : IMerchantSite
 {
