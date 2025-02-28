@@ -5,14 +5,17 @@ using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using ADAM.API.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddLogging();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
-    throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+                       throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
@@ -28,6 +31,8 @@ builder.Services.AddHangfire(config => config
 builder.Services.AddHangfireServer();
 
 builder.Services.AddHttpClient();
+
+builder.Services.AddSites();
 
 var app = builder.Build();
 
@@ -69,4 +74,7 @@ RecurringJob.AddOrUpdate<ScrapeAndNotifyJob>(
     scraper => scraper.ExecuteAsync(),
     Cron.Daily(9, 0));
 
+// TODO: Temporary for testing
+// using var scope = app.Services.CreateScope();
+// await scope.ServiceProvider.GetService<IJob>().ExecuteAsync();
 app.Run();
