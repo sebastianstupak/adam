@@ -1,6 +1,7 @@
 using ADAM.API.Jobs;
 using ADAM.Domain;
 using Hangfire;
+using Hangfire.Dashboard;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
@@ -67,7 +68,10 @@ app.MapHealthChecks("/health", new HealthCheckOptions
     }
 });
 
-app.UseHangfireDashboard();
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = new[] { new AllowAllConnectionsFilter() }
+});
 
 RecurringJob.AddOrUpdate<ScrapeAndNotifyJob>(
     "daily-scrape-and-notify-job",
@@ -78,3 +82,8 @@ RecurringJob.AddOrUpdate<ScrapeAndNotifyJob>(
 // using var scope = app.Services.CreateScope();
 // await scope.ServiceProvider.GetService<IJob>().ExecuteAsync();
 app.Run();
+
+public class AllowAllConnectionsFilter : IDashboardAuthorizationFilter
+{
+    public bool Authorize(DashboardContext context) => true;
+}

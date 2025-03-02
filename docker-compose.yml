@@ -9,7 +9,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8080
       - ASPNETCORE_HTTPS_PORTS=8081
-      - ConnectionStrings__DefaultConnection=Host=postgres;Database=adamdb;Username=postgres;Password=yourpassword
+      - ConnectionStrings__DefaultConnection=Host=adam-db;Database=adamdb;Username=postgres;Password=yourpassword
     ports:
       - "8080:8080"
       - "8081:8081"
