@@ -82,9 +82,6 @@ RecurringJob.AddOrUpdate<ScrapeAndNotifyJob>(
     scraper => scraper.ExecuteAsync(),
     Cron.Daily(9, 0));
 
-// TODO: Temporary for testing
-// using var scope = app.Services.CreateScope();
-// await scope.ServiceProvider.GetService<IJob>().ExecuteAsync();
 app.Run();
 
 namespace ADAM.API

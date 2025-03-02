@@ -1,6 +1,6 @@
 using ADAM.API.Endpoints;
+using ADAM.API.Jobs;
 using ADAM.Application.Objects;
-using ADAM.Application.Services.Users;
 
 namespace ADAM.API.Extensions;
 
@@ -40,4 +40,11 @@ public static class EndpointExtensions
             .Produces<IEnumerable<GetUserSubscriptionDto>>()
             .ProducesProblem(StatusCodes.Status404NotFound);
     }
+
+    // TODO: For testing
+    // private static void RegisterTestingEndpoints(this IEndpointRouteBuilder routes)
+    // {
+    //     var testing = routes.MapGroup("/api/v1/testing");
+    //     testing.MapGet("job", ([FromServices] IJob job) => job.ExecuteAsync());
+    // }
 }

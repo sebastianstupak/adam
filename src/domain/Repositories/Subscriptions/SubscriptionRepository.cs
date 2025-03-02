@@ -24,10 +24,4 @@ public class SubscriptionRepository(AppDbContext dbCtx) : ISubscriptionRepositor
             .Where(s => s.User.Guid == userGuid)
             .ToListAsync();
     }
-
-    public Task<int> CreateSubscriptionAsync(Subscription subscription)
-    {
-        dbCtx.Subscriptions.Add(subscription);
-        return dbCtx.SaveChangesAsync();
-    }
 }
