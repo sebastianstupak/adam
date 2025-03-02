@@ -1,4 +1,7 @@
+using ADAM.Application.Services.Users;
 using ADAM.Application.Sites;
+using ADAM.Domain.Repositories;
+using ADAM.Domain.Repositories.Subscriptions;
 
 namespace ADAM.API.Extensions;
 
@@ -13,8 +16,10 @@ public static class DiExtensions
         return services;
     }
 
-    public static IServiceCollection AddServices(this IServiceCollection services)
+    public static IServiceCollection AddAdamServices(this IServiceCollection services)
     {
+        services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
+        services.AddScoped<IUserService, UserService>();
         return services;
     }
 }

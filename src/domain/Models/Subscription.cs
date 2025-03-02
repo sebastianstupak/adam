@@ -1,13 +1,16 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace ADAM.Domain.Models;
 
 public class Subscription
 {
     public long Id { get; set; }
-    
+
     public SubscriptionType Type { get; set; }
-    
+
+    [MaxLength(255)]
     public required string Value { get; set; }
-    
+
     public virtual User User { get; set; }
 }
 
@@ -20,7 +23,7 @@ public enum SubscriptionType
     /// Merchant name subscription
     /// </summary>
     Merchant,
-    
+
     /// <summary>
     /// Merchant offer subscription
     /// </summary>

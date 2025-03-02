@@ -22,6 +22,10 @@ ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "./ADAM.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
+RUN dotnet dev-certs https --clean
+RUN dotnet dev-certs https -ep %USERPROFILE%\.aspnet\https\aspnetapp.pfx -p yourpassword
+RUN dotnet dev-certs https --trust
+
 WORKDIR /app
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "ADAM.API.dll"]
