@@ -17,7 +17,7 @@ public class UserService(
         var user = await userRepository.GetUserAsync(userGuid);
 
         if (user == null)
-            throw new UserNotFoundException();
+            await userRepository.CreateUserAsync(userGuid);
 
         var subscriptions = await subscriptionRepository.GetSubscriptionsAsync(userGuid);
 
@@ -36,9 +36,12 @@ public class UserService(
         var user = await userRepository.GetUserAsync(dto.UserGuid);
 
         if (user == null)
-            throw new UserNotFoundException();
+        {
+            await userRepository.CreateUserAsync(dto.UserGuid);
+            user = await userRepository.GetUserAsync(dto.UserGuid);
+        }
 
-        user.Subscriptions.Add(new Subscription
+        user!.Subscriptions.Add(new Subscription
         {
             Type = dto.Type,
             Value = dto.Value,
@@ -77,7 +80,5 @@ public class UserService(
             throw new ArgumentOutOfRangeException(value);
     }
 }
-
-public class UserNotFoundException() : Exception("User not found");
 
 public class SubscriptionNotFoundException() : Exception("Subscription not found");

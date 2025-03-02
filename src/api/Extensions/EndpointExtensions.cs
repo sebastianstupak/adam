@@ -14,19 +14,20 @@ public static class EndpointExtensions
 
     private static void RegisterSubscriptionEndpoints(this IEndpointRouteBuilder routes)
     {
-        var users = routes.MapGroup("/api/v1/subscription");
+        var subscription = routes.MapGroup("/api/v1/subscription");
+        var subscriptions = routes.MapGroup("api/v1/subscriptions");
 
-        users.MapPost("", CreateUserSubscriptionEndpoint.HandleAsync)
+        subscription.MapPost("", CreateUserSubscriptionEndpoint.HandleAsync)
             .Produces(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
-        users.MapPut("s/{id:int}", UpdateUserSusbcriptionEndpoint.HandleAsync)
+        subscriptions.MapPut("{id:int}", UpdateUserSusbcriptionEndpoint.HandleAsync)
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
-        users.MapDelete("s/{id:int}", DeleteUserSubscriptionEndpoint.HandleAsync)
+        subscriptions.MapDelete("{id:int}", DeleteUserSubscriptionEndpoint.HandleAsync)
             .Produces(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status404NotFound);
     }

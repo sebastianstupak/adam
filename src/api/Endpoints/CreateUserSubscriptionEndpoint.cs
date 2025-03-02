@@ -14,10 +14,6 @@ public class CreateUserSubscriptionEndpoint
             await userService.CreateUserSubscriptionAsync(dto);
             return Results.Created();
         }
-        catch (UserNotFoundException)
-        {
-            return Results.NotFound($"A user with GUID '{dto.UserGuid}' does not exist");
-        }
         catch (ArgumentOutOfRangeException e)
         {
             return Results.BadRequest(e.Message);

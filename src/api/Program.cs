@@ -35,7 +35,7 @@ builder.Services.AddHangfireServer();
 builder.Services.AddHttpClient();
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddAdamServices().AddSites();
+builder.Services.AddSites().AddAdamServices();
 
 var app = builder.Build();
 

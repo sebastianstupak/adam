@@ -71,7 +71,8 @@ namespace ADAM.Domain.Migrations
 
                     b.Property<string>("Value")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
 
                     b.HasKey("Id");
 
@@ -93,11 +94,6 @@ namespace ADAM.Domain.Migrations
 
                     b.Property<Guid>("Guid")
                         .HasColumnType("uuid");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
 
                     b.HasKey("Id");
 

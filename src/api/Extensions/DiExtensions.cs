@@ -2,6 +2,7 @@ using ADAM.Application.Services.Users;
 using ADAM.Application.Sites;
 using ADAM.Domain.Repositories;
 using ADAM.Domain.Repositories.Subscriptions;
+using ADAM.Domain.Repositories.Users;
 
 namespace ADAM.API.Extensions;
 
@@ -19,6 +20,7 @@ public static class DiExtensions
     public static IServiceCollection AddAdamServices(this IServiceCollection services)
     {
         services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserService, UserService>();
         return services;
     }
