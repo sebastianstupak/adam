@@ -1,3 +1,6 @@
+using System.Text.Json;
+using ADAM.API;
+using ADAM.API.Extensions;
 using ADAM.API.Jobs;
 using ADAM.Domain;
 using Hangfire;
@@ -5,15 +8,16 @@ using Hangfire.Dashboard;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddLogging();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
-    throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+                       throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
@@ -30,6 +34,9 @@ builder.Services.AddHangfireServer();
 
 builder.Services.AddHttpClient();
 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSites().AddAdamServices();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -40,6 +47,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.RegisterAdamEndpoints();
 
 app.MapHealthChecks("/health", new HealthCheckOptions
 {
@@ -65,7 +74,7 @@ app.MapHealthChecks("/health", new HealthCheckOptions
 
 app.UseHangfireDashboard("/hangfire", new DashboardOptions
 {
-    Authorization = new[] { new AllowAllConnectionsFilter() }
+    Authorization = [new AllowAllConnectionsFilter()]
 });
 
 RecurringJob.AddOrUpdate<ScrapeAndNotifyJob>(
@@ -75,7 +84,10 @@ RecurringJob.AddOrUpdate<ScrapeAndNotifyJob>(
 
 app.Run();
 
-public class AllowAllConnectionsFilter : IDashboardAuthorizationFilter
+namespace ADAM.API
 {
-    public bool Authorize(DashboardContext context) => true;
+    public class AllowAllConnectionsFilter : IDashboardAuthorizationFilter
+    {
+        public bool Authorize(DashboardContext context) => true;
+    }
 }

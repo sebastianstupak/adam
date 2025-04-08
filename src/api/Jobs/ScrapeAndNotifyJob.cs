@@ -1,64 +1,60 @@
-﻿using HtmlAgilityPack;
+﻿using System.Collections.Concurrent;
+using ADAM.Application.Sites;
+using ADAM.Domain;
+using ADAM.Domain.Models;
+using ADAM.Domain.Repositories.Users;
 
 namespace ADAM.API.Jobs;
 
-public class ScrapeAndNotifyJob : IJob
+public class ScrapeAndNotifyJob(
+    ILogger<ScrapeAndNotifyJob> logger,
+    AppDbContext dbCtx,
+    IUserRepository userRepository,
+    IEnumerable<IMerchantSite> merchantSites
+) : IJob
 {
-    private readonly HttpClient _httpClient;
-    private readonly IConfiguration _configuration;
-    private readonly ILogger<ScrapeAndNotifyJob> _logger;
-
-    public ScrapeAndNotifyJob(
-        ILogger<ScrapeAndNotifyJob> logger,
-        IConfiguration configuration,
-        HttpClient httpClient)
-    {
-        _logger = logger;
-        _configuration = configuration;
-        _httpClient = httpClient;
-    }
+    private readonly IList<IMerchantSite> _merchantSites = merchantSites.ToList();
 
     public async Task ExecuteAsync()
     {
-        var url = _configuration["ProcessedUrl"];
-
         try
         {
-            _logger.LogInformation("Starting web scraping for URL: {Url}", url);
+            var merchantOffers = new ConcurrentBag<MerchantOffer>();
 
-            // Download the HTML content
-            var html = await _httpClient.GetStringAsync(url);
+            await Parallel.ForEachAsync(_merchantSites,
+                async (site, ct) =>
+                {
+                    try
+                    {
+                        logger.LogInformation("Starting web scraping for URL: {Url}", site.GetUrl());
 
-            // Parse HTML using HtmlAgilityPack
-            var htmlDoc = new HtmlDocument();
-            htmlDoc.LoadHtml(html);
+                        var offers = await site.GetOffersAsync(ct);
+                        foreach (var offer in offers)
+                            merchantOffers.Add(offer);
 
-            // Example: Extract all paragraph texts
-            var paragraphs = htmlDoc.DocumentNode.SelectNodes("//p");
-            var extractedContent = paragraphs != null
-                ? string.Join("\n", paragraphs.Select(p => p.InnerText))
-                : "No content found";
+                        logger.LogInformation("Web scraping completed successfully for URL: {Url}", site.GetUrl());
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, "An error occured while scraping: {URL}\n{exMsg}", site.GetUrl(),
+                            ex.Message);
+                    }
+                }
+            );
 
-            /*
+            var merchantNamesAndMeals = new List<string>();
+            merchantNamesAndMeals.AddRange(merchantOffers.Select(mo => mo.Meal));
+            merchantNamesAndMeals.AddRange(merchantOffers.Select(mo => mo.Name));
 
-            // Store the scraped data
-            var scrapedData = new ScrapedData
-            {
-                Url = url,
-                Content = extractedContent,
-                ScrapedAt = DateTime.UtcNow
-            };
+            var users = await userRepository.GetUsersWithMatchingSubscriptionsAsync(merchantNamesAndMeals);
+            // TODO: Notify subscribed users
 
-            _dbContext.ScrapedData.Add(scrapedData);
-            await _dbContext.SaveChangesAsync();
-            */
-
-            _logger.LogInformation("Web scraping completed successfully for URL: {Url}", url);
+            dbCtx.AddRange(merchantOffers);
+            await dbCtx.SaveChangesAsync();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while scraping URL: {Url}", url);
-            throw;
+            logger.LogError(ex, "An error occured: {exMsg}\n{exInnerEx}", ex.Message, ex.InnerException);
         }
     }
 }
