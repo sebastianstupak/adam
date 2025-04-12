@@ -28,7 +28,7 @@ public class CreateUserSubscriptionEndpointTests(TestWebAppFactory factory) : In
         await EnsureCreatedAsync((response, dto));
     }
 
-    [Test]
+    [Test, DependsOn(nameof(CreateUserSubscription_WhenCalledWithValidData_CreatesSubscription))]
     public async Task UpdateUserSubscription_WhenCalledWithValidData_UpdatesSubscription()
     {
         const string updateValue = "update";
@@ -42,7 +42,7 @@ public class CreateUserSubscriptionEndpointTests(TestWebAppFactory factory) : In
         var updateDto = new UpdateUserSubscriptionDto { NewValue = updateValue };
 
         var updateResponse = await httpClient.PutAsJsonAsync($"api/v1/subscriptions/{subscriptionId}", updateDto);
-        
+
         DbCtx.ChangeTracker.Clear(); // Clear change tracker to get DB data later
 
         await Assert.That(updateResponse).IsNotNull();
@@ -50,7 +50,7 @@ public class CreateUserSubscriptionEndpointTests(TestWebAppFactory factory) : In
         await Assert.That(DbCtx.Find<Subscription>(subscriptionId)!.Value == updateValue).IsTrue();
     }
 
-    [Test]
+    [Test, DependsOn(nameof(UpdateUserSubscription_WhenCalledWithValidData_UpdatesSubscription))]
     public async Task DeleteUserSubscription_WhenCalledWithValidData_DeletesSubscription()
     {
         var httpClient = GetHttpClient();

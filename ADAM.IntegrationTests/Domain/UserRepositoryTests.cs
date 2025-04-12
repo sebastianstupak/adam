@@ -1,20 +1,17 @@
 using ADAM.Domain.Models;
 using ADAM.Domain.Repositories.Users;
 using ADAM.IntegrationTests.TestConfiguration;
+using Microsoft.EntityFrameworkCore;
 
 namespace ADAM.IntegrationTests.Domain;
 
 [ClassDataSource<TestWebAppFactory>(Shared = SharedType.Keyed, Key = "Subscriptions")]
 [Property("TestCategory", "Container")]
-public class UserRepositoryTests : IntegrationTestBase
+public class UserRepositoryTests(TestWebAppFactory factory) : IntegrationTestBase(factory)
 {
-    private readonly List<string> _names = ["bryndzové halušky", "KFC", "naan & curry"];
+    private readonly List<string> _names = ["bryndzové halušky", "KFC", "naan & curry", "tahiti"];
 
     private UserRepository _userRepository;
-
-    public UserRepositoryTests(TestWebAppFactory factory) : base(factory)
-    {
-    }
 
     protected override Task OnInitAsync()
     {
@@ -22,14 +19,26 @@ public class UserRepositoryTests : IntegrationTestBase
         return Task.CompletedTask;
     }
 
+    [Before(Test)]
+    public override Task LoadDependenciesAsync()
+    {
+        _userRepository = new UserRepository(DbCtx);
+        return Task.CompletedTask;
+    }
+
     protected override async Task OnDisposeAsync() => await DbCtx.Database.EnsureDeletedAsync();
 
     [Test]
-    [Arguments("bryndz", SubscriptionType.Offer, false)]
-    [Arguments("bryndza", SubscriptionType.Offer, true)]
-    [Arguments("kfcc", SubscriptionType.Merchant, true)]
-    [Arguments("kfc", SubscriptionType.Merchant, false)]
-    [Arguments("naan", SubscriptionType.Merchant, false)]
+    [Arguments("bryndz", SubscriptionType.Offer, true)]
+    [Arguments("bryndza", SubscriptionType.Offer, false)]
+    [Arguments("kfcc", SubscriptionType.Merchant, false)]
+    [Arguments("kfc", SubscriptionType.Merchant, true)]
+    [Arguments("naan", SubscriptionType.Merchant, true)]
+    [Arguments("tahiti", SubscriptionType.Merchant, true)]
+    [Arguments("tahit", SubscriptionType.Offer, true)]
+    [Arguments("b", SubscriptionType.Offer, true)]
+    [Arguments("bryndzove", SubscriptionType.Offer, false)]
+    [NotInParallel(nameof(GetUsersWithMatchingSubscriptionsAsync_WhenASubscriptionMatchesPassedName_ReturnsUser))]
     public async Task GetUsersWithMatchingSubscriptionsAsync_WhenASubscriptionMatchesPassedName_ReturnsUser(
         string subscriptionValue, SubscriptionType subscriptionType, bool shouldReturnUser)
     {
@@ -53,13 +62,16 @@ public class UserRepositoryTests : IntegrationTestBase
 
         var users = (await _userRepository.GetUsersWithMatchingSubscriptionsAsync(_names)).ToList();
 
-        await Assert.That((users.Count != 0 && shouldReturnUser) || (users.Count == 0 && !shouldReturnUser)).IsTrue();
-    }
-
-    [Before(Test)]
-    public override Task LoadDependenciesAsync()
-    {
-        _userRepository = new UserRepository(DbCtx);
-        return Task.CompletedTask;
+        try
+        {
+            await Assert.That(
+                (users.Count != 0 && shouldReturnUser) || (users.Count == 0 && !shouldReturnUser)
+            ).IsTrue();
+        }
+        finally
+        {
+            Console.WriteLine($"{users.Count} - {shouldReturnUser}\n{subscriptionValue} {subscriptionType}");
+            await DbCtx.Users.ExecuteDeleteAsync();
+        }
     }
 }

@@ -1,6 +1,7 @@
 using ADAM.Domain;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using TUnit.Core.Interfaces;
 
 namespace ADAM.IntegrationTests.TestConfiguration;
 
@@ -25,9 +26,6 @@ public class IntegrationTestBase : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         GC.SuppressFinalize(this);
-        if (DbCtx is not null)
-            await DbCtx.DisposeAsync();
-        await Factory.DisposeAsync();
         await OnDisposeAsync();
     }
 
