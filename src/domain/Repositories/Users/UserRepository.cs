@@ -15,19 +15,18 @@ public class UserRepository(AppDbContext dbCtx) : IUserRepository
     {
         {
             var foodNamesList = names.ToList();
+
             if (foodNamesList.Count == 0)
                 return [];
 
-            // Build a query that checks if any subscription (with wildcards) matches any food name
-            var users = dbCtx.Users
-                .Where(u => u.Subscriptions.Any(s =>
-                    foodNamesList.Any(foodName =>
-                        EF.Functions.ILike(foodName, "%" + s.Value + "%"))));
-                
-
-            var _string = users.ToQueryString();
-            
-            return await users.ToListAsync();
+            return await dbCtx.Users
+                .Where(u => u.Subscriptions.Any(
+                        s => foodNamesList.Any(
+                            foodName => EF.Functions.ILike(foodName, "%" + s.Value + "%")
+                        )
+                    )
+                )
+                .ToListAsync();
         }
     }
 
