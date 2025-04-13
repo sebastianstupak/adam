@@ -12,14 +12,14 @@ public class UserService(
     AppDbContext dbCtx
 ) : IUserService
 {
-    public async Task<IEnumerable<GetUserSubscriptionDto>> GetUserSubscriptionsAsync(Guid userGuid)
+    public async Task<IEnumerable<GetUserSubscriptionDto>> GetUserSubscriptionsAsync(string teamsId)
     {
-        var user = await userRepository.GetUserAsync(userGuid);
+        var user = await userRepository.GetUserAsync(teamsId);
 
-        if (user == null)
-            await userRepository.CreateUserAsync(userGuid);
+        if (user is null)
+            await userRepository.CreateUserAsync(teamsId);
 
-        var subscriptions = await subscriptionRepository.GetSubscriptionsAsync(userGuid);
+        var subscriptions = await subscriptionRepository.GetSubscriptionsAsync(teamsId);
 
         return subscriptions.Select(s => new GetUserSubscriptionDto
         {
@@ -33,12 +33,12 @@ public class UserService(
     {
         ValidateSubscriptionValueLength(dto.Value);
 
-        var user = await userRepository.GetUserAsync(dto.UserGuid);
+        var user = await userRepository.GetUserAsync(dto.TeamsId);
 
         if (user == null)
         {
-            await userRepository.CreateUserAsync(dto.UserGuid);
-            user = await userRepository.GetUserAsync(dto.UserGuid);
+            await userRepository.CreateUserAsync(dto.TeamsId);
+            user = await userRepository.GetUserAsync(dto.TeamsId);
         }
 
         user!.Subscriptions.Add(new Subscription
@@ -50,7 +50,7 @@ public class UserService(
         await dbCtx.SaveChangesAsync();
     }
 
-    public async Task UpdateUserSubscriptionAsync(int id, UpdateUserSubscriptionDto dto)
+    public async Task UpdateUserSubscriptionAsync(int id, UpdateUserSubscriptionDto dto, string teamsId)
     {
         ValidateSubscriptionValueLength(dto.NewValue);
 
@@ -58,6 +58,10 @@ public class UserService(
 
         if (subscription is null)
             throw new SubscriptionNotFoundException();
+
+        if (teamsId is not null
+            && !subscription.User.TeamsId.Equals(teamsId, StringComparison.InvariantCultureIgnoreCase))
+            throw new Exception("You can't modify this subscription.");
 
         subscription.Value = dto.NewValue;
 
@@ -74,7 +78,7 @@ public class UserService(
         await subscriptionRepository.DeleteAsync(id);
     }
 
-    private void ValidateSubscriptionValueLength(string value)
+    private static void ValidateSubscriptionValueLength(string value)
     {
         if (string.IsNullOrEmpty(value) || string.IsNullOrWhiteSpace(value) || value.Length > 255)
             throw new ArgumentOutOfRangeException(value);

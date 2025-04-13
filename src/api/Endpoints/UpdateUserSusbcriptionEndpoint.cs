@@ -10,7 +10,7 @@ public class UpdateUserSusbcriptionEndpoint
     {
         try
         {
-            await userService.UpdateUserSubscriptionAsync(id, dto);
+            await userService.UpdateUserSubscriptionAsync(id, dto, null); // TODO: Decide
             return Results.Created();
         }
         catch (SubscriptionNotFoundException)

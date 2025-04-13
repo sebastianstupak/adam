@@ -4,7 +4,7 @@ public class User
 {
     public long Id { get; set; }
 
-    public required Guid Guid { get; set; }
+    public required string TeamsId { get; set; }
 
     public required DateTime CreationDate { get; set; }
 

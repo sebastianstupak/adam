@@ -4,7 +4,7 @@ namespace ADAM.Domain.Repositories.Users;
 
 public interface IUserRepository
 {
-    Task<User?> GetUserAsync(Guid guid);
+    Task<User?> GetUserAsync(string teamsId);
     
     /// <summary>
     /// Returns all users whose even a single subscription matches at least a single string in <see cref="names"/>.
@@ -13,5 +13,5 @@ public interface IUserRepository
     /// <returns>A collection of <see cref="User"/>s matching the predicate.</returns>
     Task<IEnumerable<User>> GetUsersWithMatchingSubscriptionsAsync(IEnumerable<string> names);
     
-    Task CreateUserAsync(Guid guid);
+    Task CreateUserAsync(string teamsId);
 }

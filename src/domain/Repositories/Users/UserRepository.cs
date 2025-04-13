@@ -5,9 +5,9 @@ namespace ADAM.Domain.Repositories.Users;
 
 public class UserRepository(AppDbContext dbCtx) : IUserRepository
 {
-    public Task<Models.User?> GetUserAsync(Guid guid)
+    public Task<Models.User?> GetUserAsync(string teamsId)
     {
-        return dbCtx.Users.FirstOrDefaultAsync(u => u.Guid == guid);
+        return dbCtx.Users.FirstOrDefaultAsync(u => u.TeamsId == teamsId);
     }
 
     // TODO: Write tests
@@ -30,11 +30,11 @@ public class UserRepository(AppDbContext dbCtx) : IUserRepository
         }
     }
 
-    public async Task CreateUserAsync(Guid guid)
+    public async Task CreateUserAsync(string teamsId)
     {
         dbCtx.Users.Add(new User
         {
-            Guid = guid,
+            TeamsId = teamsId,
             CreationDate = DateTime.UtcNow
         });
 
