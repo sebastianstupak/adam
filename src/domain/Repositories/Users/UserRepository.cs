@@ -35,7 +35,8 @@ public class UserRepository(AppDbContext dbCtx) : IUserRepository
         dbCtx.Users.Add(new User
         {
             TeamsId = teamsId,
-            CreationDate = DateTime.UtcNow
+            CreationDate = DateTime.UtcNow,
+            AcceptsDataStorage = false
         });
 
         await dbCtx.SaveChangesAsync();

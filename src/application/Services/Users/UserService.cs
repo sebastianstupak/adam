@@ -3,6 +3,7 @@ using ADAM.Domain;
 using ADAM.Domain.Models;
 using ADAM.Domain.Repositories.Subscriptions;
 using ADAM.Domain.Repositories.Users;
+using Microsoft.EntityFrameworkCore;
 
 namespace ADAM.Application.Services.Users;
 
@@ -12,14 +13,23 @@ public class UserService(
     AppDbContext dbCtx
 ) : IUserService
 {
+    private readonly IUserRepository _userRepository = userRepository;
+    private readonly ISubscriptionRepository _subscriptionRepository = subscriptionRepository;
+    private readonly AppDbContext _dbCtx = dbCtx;
+
+    public async Task CreateUserAsync(string teamsId)
+    {
+        await _userRepository.CreateUserAsync(teamsId);
+    }
+
     public async Task<IEnumerable<GetUserSubscriptionDto>> GetUserSubscriptionsAsync(string teamsId)
     {
-        var user = await userRepository.GetUserAsync(teamsId);
+        var user = await _userRepository.GetUserAsync(teamsId);
 
         if (user is null)
-            await userRepository.CreateUserAsync(teamsId);
+            await CreateUserAsync(teamsId);
 
-        var subscriptions = await subscriptionRepository.GetSubscriptionsAsync(teamsId);
+        var subscriptions = await _subscriptionRepository.GetSubscriptionsAsync(teamsId);
 
         return subscriptions.Select(s => new GetUserSubscriptionDto
         {
@@ -33,12 +43,12 @@ public class UserService(
     {
         ValidateSubscriptionValueLength(dto.Value);
 
-        var user = await userRepository.GetUserAsync(dto.TeamsId);
+        var user = await _userRepository.GetUserAsync(dto.TeamsId);
 
-        if (user == null)
+        if (user is null)
         {
-            await userRepository.CreateUserAsync(dto.TeamsId);
-            user = await userRepository.GetUserAsync(dto.TeamsId);
+            await CreateUserAsync(dto.TeamsId);
+            user = await _userRepository.GetUserAsync(dto.TeamsId);
         }
 
         user!.Subscriptions.Add(new Subscription
@@ -47,14 +57,14 @@ public class UserService(
             Value = dto.Value,
         });
 
-        await dbCtx.SaveChangesAsync();
+        await _dbCtx.SaveChangesAsync();
     }
 
     public async Task UpdateUserSubscriptionAsync(int id, UpdateUserSubscriptionDto dto, string teamsId)
     {
         ValidateSubscriptionValueLength(dto.NewValue);
 
-        var subscription = await subscriptionRepository.GetSubscriptionAsync(id);
+        var subscription = await _subscriptionRepository.GetSubscriptionAsync(id);
 
         if (subscription is null)
             throw new SubscriptionNotFoundException();
@@ -65,17 +75,40 @@ public class UserService(
 
         subscription.Value = dto.NewValue;
 
-        await dbCtx.SaveChangesAsync();
+        await _dbCtx.SaveChangesAsync();
     }
 
     public async Task DeleteUserSubscriptionAsync(int id)
     {
-        var subscription = await subscriptionRepository.GetSubscriptionAsync(id);
+        var subscription = await _subscriptionRepository.GetSubscriptionAsync(id);
 
         if (subscription is null)
             throw new SubscriptionNotFoundException();
 
-        await subscriptionRepository.DeleteAsync(id);
+        await _subscriptionRepository.DeleteAsync(id);
+    }
+
+    public async Task<bool> DidUserAcceptDataStorageAsync(string teamsId)
+    {
+        var user = await _dbCtx.Users.FirstOrDefaultAsync(
+            u => u.TeamsId == teamsId
+        );
+
+        return user is not null && user.AcceptsDataStorage;
+    }
+
+    public async Task UpdateUserConsentAsync(string teamsId)
+    {
+        var user = await _userRepository.GetUserAsync(teamsId);
+
+        if (user is null)
+            await CreateUserAsync(teamsId);
+
+        await _dbCtx.Users
+            .Where(u => u.TeamsId == teamsId)
+            .ExecuteUpdateAsync(
+                u => u.SetProperty(x => x.AcceptsDataStorage, true)
+            );
     }
 
     private static void ValidateSubscriptionValueLength(string value)

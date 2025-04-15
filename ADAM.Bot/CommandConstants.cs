@@ -12,4 +12,6 @@ public class CommandConstants
 
     public const string Unsubscribe = "unsubscribe";
     public const string Help = "help";
+
+    public const string Consent = "consent";
 }

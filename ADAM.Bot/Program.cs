@@ -13,9 +13,10 @@ public class Program
 
         // Add services to the container.
         builder.Services.AddAuthorization();
-        
+
         builder.Services.AddSingleton<BotFrameworkAuthentication, ConfigurationBotFrameworkAuthentication>();
         builder.Services.AddSingleton<IBotFrameworkHttpAdapter, AdapterWithErrorHandler>();
+        builder.Services.AddScoped<MessageSender>();
         builder.Services.AddTransient<IBot, AdamBot>();
 
         builder.Services.AddAdamServices();
