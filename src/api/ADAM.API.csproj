@@ -32,6 +32,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\ADAM.Bot\ADAM.Bot.csproj" />
+    <ProjectReference Include="..\..\ADAM.Common\ADAM.Common.csproj" />
     <ProjectReference Include="..\application\ADAM.Application.csproj" />
   </ItemGroup>
 

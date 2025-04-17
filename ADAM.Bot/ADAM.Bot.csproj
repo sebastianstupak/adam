@@ -12,7 +12,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\src\api\ADAM.API.csproj" />
+      <ProjectReference Include="..\ADAM.Common\ADAM.Common.csproj" />
       <ProjectReference Include="..\src\application\ADAM.Application.csproj" />
     </ItemGroup>
 

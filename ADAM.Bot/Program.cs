@@ -1,4 +1,5 @@
-using ADAM.API.Extensions;
+using ADAM.Application.Extensions;
+using ADAM.Common;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Connector.Authentication;
@@ -20,7 +21,7 @@ public class Program
         builder.Services.AddTransient<IBot, AdamBot>();
 
         builder.Services.AddAdamServices();
-        builder.AddDbContext();
+        Extensions.AddDbContext(builder.Services, builder.Configuration);
 
         var app = builder.Build();
 

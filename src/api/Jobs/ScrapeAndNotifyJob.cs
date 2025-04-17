@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using ADAM.Application.Sites;
+using ADAM.Bot;
 using ADAM.Domain;
 using ADAM.Domain.Models;
 using ADAM.Domain.Repositories.Users;
@@ -10,9 +11,11 @@ public class ScrapeAndNotifyJob(
     ILogger<ScrapeAndNotifyJob> logger,
     AppDbContext dbCtx,
     IUserRepository userRepository,
-    IEnumerable<IMerchantSite> merchantSites
+    IEnumerable<IMerchantSite> merchantSites,
+    MessageSender messageSender
 ) : IJob
 {
+    private readonly MessageSender _messageSender = messageSender;
     private readonly IList<IMerchantSite> _merchantSites = merchantSites.ToList();
 
     public async Task ExecuteAsync()
@@ -47,7 +50,10 @@ public class ScrapeAndNotifyJob(
             merchantNamesAndMeals.AddRange(merchantOffers.Select(mo => mo.Name));
 
             var users = await userRepository.GetUsersWithMatchingSubscriptionsAsync(merchantNamesAndMeals);
-            // TODO: Notify subscribed users
+            foreach (var user in users)
+            {
+                await _messageSender.SendMessageToUserAsync(user.TeamsId, "HELLO!!!");
+            }
 
             dbCtx.AddRange(merchantOffers);
             await dbCtx.SaveChangesAsync();

@@ -52,14 +52,14 @@ public class AdamBot(IUserService userService, AppDbContext dbCtx, MessageSender
             await PersistConversationReferenceAsync(teamsId, turnContext);
 
         // TODO: Temp, remove once done testing
-        // if (messageContent == "@adam test")
-        // {
-        //     await _msgSender.SendMessageToUserAsync(
-        //         teamsId,
-        //         "This is a proactive message",
-        //         cancellationToken
-        //     );
-        // }
+        if (messageContent == "@adam test")
+        {
+            await _msgSender.SendMessageToUserAsync(
+                teamsId,
+                "This is a proactive message",
+                cancellationToken
+            );
+        }
 
         if (StringMatchesFullOrSubString(parts[1], CommandConstants.Subscribe, [0, 3, 0, 1]))
         {
@@ -260,23 +260,20 @@ public class AdamBot(IUserService userService, AppDbContext dbCtx, MessageSender
                 .Where(cr => cr.UserId == user.Id)
                 .FirstAsync();
 
-            crToUpdate.ActivityId = convRef.ActivityId;
-            crToUpdate.ChannelId = convRef.ChannelId;
             crToUpdate.ServiceUrl = convRef.ServiceUrl;
+            crToUpdate.ConversationId = convRef.Conversation.Id;
         }
         else
         {
-            _dbCtx.ConversationReferences.Add(
-                new Domain.Models.ConversationReference
-                {
-                    UserId = user.Id,
-                    ActivityId = convRef.ActivityId,
-                    ChannelId = convRef.ChannelId,
-                    ServiceUrl = convRef.ServiceUrl
-                }
-            );
-
-            await _dbCtx.SaveChangesAsync();
+            var obj = new Domain.Models.ConversationReference
+            {
+                UserId = user.Id,
+                ServiceUrl = convRef.ServiceUrl,
+                ConversationId = convRef.Conversation.Id
+            };
+            _dbCtx.ConversationReferences.Add(obj);
         }
+
+        await _dbCtx.SaveChangesAsync();
     }
 }

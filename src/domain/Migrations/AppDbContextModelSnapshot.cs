@@ -30,11 +30,7 @@ namespace ADAM.Domain.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
-                    b.Property<string>("ActivityId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("ChannelId")
+                    b.Property<string>("ConversationId")
                         .IsRequired()
                         .HasColumnType("text");
 

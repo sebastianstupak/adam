@@ -36,7 +36,7 @@ public static class EndpointExtensions
     {
         var users = routes.MapGroup("/api/v1/user");
 
-        users.MapGet("{guid:guid}/subscriptions", GetUserSubscriptionsEndpoint.HandleAsync)
+        users.MapGet("{teamsId:guid}/subscriptions", GetUserSubscriptionsEndpoint.HandleAsync)
             .Produces<IEnumerable<GetUserSubscriptionDto>>()
             .ProducesProblem(StatusCodes.Status404NotFound);
     }
