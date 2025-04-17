@@ -1,21 +1,25 @@
 ﻿using System.Collections.Concurrent;
+using ADAM.Application.Services;
 using ADAM.Application.Sites;
-using ADAM.Bot;
 using ADAM.Domain;
 using ADAM.Domain.Models;
 using ADAM.Domain.Repositories.Users;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
-namespace ADAM.API.Jobs;
+namespace ADAM.Application.Jobs;
 
 public class ScrapeAndNotifyJob(
     ILogger<ScrapeAndNotifyJob> logger,
     AppDbContext dbCtx,
     IUserRepository userRepository,
     IEnumerable<IMerchantSite> merchantSites,
-    MessageSender messageSender
+    MessageSendingService messageSender,
+    IConfiguration configuration
 ) : IJob
 {
-    private readonly MessageSender _messageSender = messageSender;
+    private readonly MessageSendingService _messageSender = messageSender;
+    private readonly IConfiguration _configuration = configuration;
     private readonly IList<IMerchantSite> _merchantSites = merchantSites.ToList();
 
     public async Task ExecuteAsync()
@@ -51,9 +55,11 @@ public class ScrapeAndNotifyJob(
 
             var users = await userRepository.GetUsersWithMatchingSubscriptionsAsync(merchantNamesAndMeals);
             foreach (var user in users)
-            {
-                await _messageSender.SendMessageToUserAsync(user.TeamsId, "HELLO!!!");
-            }
+                await _messageSender.SendMessageToUserAsync(
+                    _configuration["BotId"] ?? throw new Exception("NULL BOT ID"),
+                    user.TeamsId,
+                    "HELLO!!!"
+                );
 
             dbCtx.AddRange(merchantOffers);
             await dbCtx.SaveChangesAsync();

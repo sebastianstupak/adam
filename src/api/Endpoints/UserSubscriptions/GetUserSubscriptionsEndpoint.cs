@@ -1,8 +1,7 @@
 using ADAM.Application.Services.Users;
-using ADAM.Domain.Models;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ADAM.API.Endpoints;
+namespace ADAM.API.Endpoints.UserSubscriptions;
 
 public class GetUserSubscriptionsEndpoint
 {

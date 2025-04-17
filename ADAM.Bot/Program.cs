@@ -1,5 +1,6 @@
+using ADAM.Application.Bot;
 using ADAM.Application.Extensions;
-using ADAM.Common;
+using ADAM.Application.Services;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Connector.Authentication;
@@ -17,11 +18,11 @@ public class Program
 
         builder.Services.AddSingleton<BotFrameworkAuthentication, ConfigurationBotFrameworkAuthentication>();
         builder.Services.AddSingleton<IBotFrameworkHttpAdapter, AdapterWithErrorHandler>();
-        builder.Services.AddScoped<MessageSender>();
+        builder.Services.AddScoped<MessageSendingService>();
         builder.Services.AddTransient<IBot, AdamBot>();
 
         builder.Services.AddAdamServices();
-        Extensions.AddDbContext(builder.Services, builder.Configuration);
+        // DiExtensions.AddDbContext(builder.Services, builder.Configuration);
 
         var app = builder.Build();
 
@@ -29,19 +30,19 @@ public class Program
 
         app.UseAuthorization();
 
-        app.MapPost("/api/messages",
-            async (HttpRequest request, HttpResponse response, IBotFrameworkHttpAdapter adapter, IBot bot) =>
-            {
-                await adapter.ProcessAsync(request, response, bot);
-            }
-        );
-
-        app.MapGet("/api/messages",
-            async (HttpRequest request, HttpResponse response, IBotFrameworkHttpAdapter adapter, IBot bot) =>
-            {
-                await adapter.ProcessAsync(request, response, bot);
-            }
-        );
+        // app.MapPost("/api/messages",
+        //     async (HttpRequest request, HttpResponse response, IBotFrameworkHttpAdapter adapter, IBot bot) =>
+        //     {
+        //         await adapter.ProcessAsync(request, response, bot);
+        //     }
+        // );
+        //
+        // app.MapGet("/api/messages",
+        //     async (HttpRequest request, HttpResponse response, IBotFrameworkHttpAdapter adapter, IBot bot) =>
+        //     {
+        //         await adapter.ProcessAsync(request, response, bot);
+        //     }
+        // );
 
         app.Run();
     }

@@ -8,12 +8,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Microsoft.Bot.Builder.Integration.AspNet.Core" Version="4.23.0" />
+        <PackageReference Include="Microsoft.Bot.Builder.Integration.AspNet.Core" Version="4.23.0"/>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\ADAM.Common\ADAM.Common.csproj" />
-      <ProjectReference Include="..\src\application\ADAM.Application.csproj" />
+        <ProjectReference Include="..\src\application\ADAM.Application.csproj"/>
     </ItemGroup>
 
 </Project>

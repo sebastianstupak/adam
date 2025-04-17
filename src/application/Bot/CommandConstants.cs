@@ -1,6 +1,6 @@
-namespace ADAM.Bot;
+namespace ADAM.Application.Bot;
 
-public class CommandConstants
+public abstract class CommandConstants
 {
     public const string AdamBase = "@adam";
 
@@ -11,6 +11,7 @@ public class CommandConstants
     public const string Update = "update";
 
     public const string Unsubscribe = "unsubscribe";
+
     public const string Help = "help";
 
     public const string Consent = "consent";

@@ -1,16 +1,14 @@
 using System.Text.Json;
 using ADAM.API;
 using ADAM.API.Extensions;
-using ADAM.API.Jobs;
 using ADAM.Application.Extensions;
-using ADAM.Bot;
-using ADAM.Common;
+using ADAM.Application.Jobs;
+using ADAM.Domain;
 using Hangfire;
 using Hangfire.Dashboard;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.Bot.Builder.Integration.AspNet.Core;
-using Microsoft.Bot.Connector.Authentication;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +19,11 @@ builder.Services.AddLogging();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
                        throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-Extensions.AddDbContext(builder.Services, builder.Configuration, connectionString);
+builder.Services.AddDbContext<AppDbContext>(opts => opts.UseNpgsql(connectionString));
+
+builder.Services.AddHealthChecks()
+    .AddNpgSql(connectionString, name: "database")
+    .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy());
 
 builder.Services.AddHangfire(config => config
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
@@ -32,12 +34,10 @@ builder.Services.AddHangfireServer();
 
 builder.Services.AddHttpClient();
 
-builder.Services.AddSingleton<BotFrameworkAuthentication, ConfigurationBotFrameworkAuthentication>();
-builder.Services.AddSingleton<IBotFrameworkHttpAdapter, AdapterWithErrorHandler>();
-builder.Services.AddScoped<MessageSender>();
-
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSites().AddAdamServices();
+builder.Services
+    .AddSites()
+    .AddAdamServices();
 
 var app = builder.Build();
 

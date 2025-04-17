@@ -3,20 +3,18 @@ using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace ADAM.Bot;
+namespace ADAM.Application.Services;
 
-public class MessageSender(
+public class MessageSendingService(
     IBotFrameworkHttpAdapter adapter,
-    IConfiguration configuration,
     AppDbContext dbCtx
 )
 {
     private readonly IBotFrameworkHttpAdapter _adapter = adapter;
     private readonly AppDbContext _dbCtx = dbCtx;
-    private readonly string _botId = configuration["BotId"];
 
     // Send a message to a specific user by their ID
-    public async Task SendMessageToUserAsync(string teamsId, string message,
+    public async Task SendMessageToUserAsync(string botId, string teamsId, string message,
         CancellationToken cancellationToken = default)
     {
         var convRef = await _dbCtx.ConversationReferences
@@ -29,13 +27,13 @@ public class MessageSender(
 
         var conversationReference = new ConversationReference
         {
-            Bot = new ChannelAccount { Id = _botId },
+            Bot = new ChannelAccount { Id = botId },
             Conversation = new ConversationAccount { Id = convRef.ConversationId },
             ServiceUrl = convRef.ServiceUrl
         };
 
         await ((CloudAdapter)_adapter).ContinueConversationAsync(
-            _botId,
+            botId,
             conversationReference,
             async (turnContext, ct) =>
             {

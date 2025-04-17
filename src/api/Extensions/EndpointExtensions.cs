@@ -1,5 +1,6 @@
 using ADAM.API.Endpoints;
-using ADAM.API.Jobs;
+using ADAM.API.Endpoints.UserSubscriptions;
+using ADAM.Application.Jobs;
 using ADAM.Application.Objects;
 
 namespace ADAM.API.Extensions;
@@ -39,6 +40,25 @@ public static class EndpointExtensions
         users.MapGet("{teamsId:guid}/subscriptions", GetUserSubscriptionsEndpoint.HandleAsync)
             .Produces<IEnumerable<GetUserSubscriptionDto>>()
             .ProducesProblem(StatusCodes.Status404NotFound);
+    }
+
+    private static void RegisterBotEndpoints(this IEndpointRouteBuilder routes)
+    {
+        var api = routes.MapGroup("/api").ExcludeFromDescription();
+
+        api.MapPost("messages",
+            async (HttpRequest request, HttpResponse response, IBotFrameworkHttpAdapter adapter, IBot bot) =>
+            {
+                await adapter.ProcessAsync(request, response, bot);
+            }
+        );
+
+        api.MapGet("messages",
+            async (HttpRequest request, HttpResponse response, IBotFrameworkHttpAdapter adapter, IBot bot) =>
+            {
+                await adapter.ProcessAsync(request, response, bot);
+            }
+        );
     }
 
     // TODO: For testing

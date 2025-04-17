@@ -1,8 +1,9 @@
 using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Builder.TraceExtensions;
 using Microsoft.Bot.Connector.Authentication;
+using Microsoft.Extensions.Logging;
 
-namespace ADAM.Bot;
+namespace ADAM.Application.Bot;
 
 public class AdapterWithErrorHandler : CloudAdapter
 {
