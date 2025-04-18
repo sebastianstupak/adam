@@ -4,34 +4,34 @@ using Microsoft.Bot.Builder;
 
 namespace ADAM.Application.Bot.Commands;
 
-public class UpdateSubscriptionCommand(IUserService userService) : ICommand
+public class UpdateSubscriptionCommand(IUserService userService) : Command
 {
     private readonly IUserService _userService = userService;
 
-    public async Task HandleAsync(ITurnContext turnContext, string[] commandParts, CancellationToken cancellationToken)
+    protected override async Task HandleCommandAsync(ITurnContext context, string[] cmdParts, CancellationToken ct)
     {
         try
         {
-            if (!int.TryParse(commandParts.ElementAtOrDefault(3), out var subscriptionId))
+            if (!int.TryParse(cmdParts.ElementAtOrDefault(3), out var subscriptionId))
                 throw new Exception("Missing or malformed subscription ID!");
 
             await _userService.UpdateUserSubscriptionAsync(
                 subscriptionId,
                 new UpdateUserSubscriptionDto
                 {
-                    NewValue = string.Join(" ", commandParts[4..])
+                    NewValue = string.Join(" ", cmdParts[4..])
                 },
-                turnContext.Activity.From.Id
+                context.Activity.From.Id
             );
 
-            await turnContext.SendActivityAsync(
-                MessageFactory.Text("✅ Subscription updated successfully."), cancellationToken
+            await context.SendActivityAsync(
+                MessageFactory.Text("✅ Subscription updated successfully."), ct
             );
         }
         catch
         {
-            await turnContext.SendActivityAsync(
-                MessageFactory.Text("❌ Error updating subscription"), cancellationToken
+            await context.SendActivityAsync(
+                MessageFactory.Text("❌ Error updating subscription"), ct
             );
         }
     }

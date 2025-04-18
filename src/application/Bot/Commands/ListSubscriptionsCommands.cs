@@ -4,13 +4,13 @@ using Microsoft.Bot.Builder;
 
 namespace ADAM.Application.Bot.Commands;
 
-public class ListSubscriptionsCommands(IUserService userService) : ICommand
+public class ListSubscriptionsCommands(IUserService userService) : Command
 {
     private readonly IUserService _userService = userService;
 
-    public async Task HandleAsync(ITurnContext turnContext, string[] commandParts, CancellationToken cancellationToken)
+    protected override async Task HandleCommandAsync(ITurnContext context, string[] cmdParts, CancellationToken ct)
     {
-        var subscriptions = (await _userService.GetUserSubscriptionsAsync(turnContext.Activity.From.Id)).ToList();
+        var subscriptions = (await _userService.GetUserSubscriptionsAsync(context.Activity.From.Id)).ToList();
 
         var output = subscriptions.Count != 0
             ? MessageFactory.Text(
@@ -30,6 +30,6 @@ public class ListSubscriptionsCommands(IUserService userService) : ICommand
             )
             : MessageFactory.Text("No subscriptions found.");
 
-        await turnContext.SendActivityAsync(output, cancellationToken);
+        await context.SendActivityAsync(output, ct);
     }
 }

@@ -3,23 +3,23 @@ using Microsoft.Bot.Builder;
 
 namespace ADAM.Application.Bot.Commands;
 
-public class ConsentCommand(IUserService userService) : ICommand
+public class ConsentCommand(IUserService userService) : Command
 {
     private readonly IUserService _userService = userService;
 
-    public async Task HandleAsync(ITurnContext turnContext, string[] commandParts, CancellationToken cancellationToken)
+    protected override async Task HandleCommandAsync(ITurnContext context, string[] cmdParts, CancellationToken ct)
     {
         try
         {
-            await _userService.UpdateUserConsentAsync(turnContext.Activity.From.Id);
-            await turnContext.SendActivityAsync(
-                MessageFactory.Text("✅ Consent updated."), cancellationToken
+            await _userService.UpdateUserConsentAsync(context.Activity.From.Id);
+            await context.SendActivityAsync(
+                MessageFactory.Text("✅ Consent updated."), ct
             );
         }
         catch
         {
-            await turnContext.SendActivityAsync(
-                MessageFactory.Text("❌ Error updating consent!"), cancellationToken
+            await context.SendActivityAsync(
+                MessageFactory.Text("❌ Error updating consent!"), ct
             );
         }
     }

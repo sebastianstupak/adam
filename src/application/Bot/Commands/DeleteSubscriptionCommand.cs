@@ -3,27 +3,27 @@ using Microsoft.Bot.Builder;
 
 namespace ADAM.Application.Bot.Commands;
 
-public class DeleteSubscriptionCommand(IUserService userService) : ICommand
+public class DeleteSubscriptionCommand(IUserService userService) : Command
 {
     private readonly IUserService _userService = userService;
 
-    public async Task HandleAsync(ITurnContext turnContext, string[] commandParts, CancellationToken cancellationToken)
+    protected override async Task HandleCommandAsync(ITurnContext context, string[] cmdParts, CancellationToken ct)
     {
         try
         {
-            if (!int.TryParse(commandParts.ElementAtOrDefault(2), out var subscriptionId))
+            if (!int.TryParse(cmdParts.ElementAtOrDefault(2), out var subscriptionId))
                 throw new Exception("Missing or malformed subscription ID!");
 
             await _userService.DeleteUserSubscriptionAsync(subscriptionId);
 
-            await turnContext.SendActivityAsync(
-                MessageFactory.Text("✅ Subscription deleted successfully."), cancellationToken
+            await context.SendActivityAsync(
+                MessageFactory.Text("✅ Subscription deleted successfully."), ct
             );
         }
         catch
         {
-            await turnContext.SendActivityAsync(
-                MessageFactory.Text("❌ Error deleting subscription"), cancellationToken
+            await context.SendActivityAsync(
+                MessageFactory.Text($"❌ Error deleting a subscription."), ct
             );
         }
     }

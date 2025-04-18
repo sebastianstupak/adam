@@ -88,6 +88,11 @@ public class AdamBot(
         {
             await GetCommand<ConsentCommand>().HandleAsync(turnContext, parts, cancellationToken);
         }
+
+        if (StringMatchesFullOrSubString(parts[1], CommandConstants.Here))
+        {
+            await GetCommand<HereCommand>().HandleAsync(turnContext, parts, cancellationToken);
+        }
     }
 
     #region Helpers

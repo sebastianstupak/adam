@@ -5,29 +5,29 @@ using Microsoft.Bot.Builder;
 
 namespace ADAM.Application.Bot.Commands;
 
-public class CreateSubscriptionCommand(IUserService userService) : ICommand
+public class CreateSubscriptionCommand(IUserService userService) : Command
 {
     private readonly IUserService _userService = userService;
 
-    public async Task HandleAsync(ITurnContext turnContext, string[] commandParts, CancellationToken cancellationToken)
+    protected override async Task HandleCommandAsync(ITurnContext context, string[] cmdParts, CancellationToken ct)
     {
         try
         {
             await _userService.CreateUserSubscriptionAsync(new CreateUserSubscriptionDto
             {
-                TeamsId = turnContext.Activity.From.Id,
+                TeamsId = context.Activity.From.Id,
                 Type = SubscriptionType.Merchant,
-                Value = string.Join(" ", commandParts[3..])
+                Value = string.Join(" ", cmdParts[3..])
             });
 
-            await turnContext.SendActivityAsync(
-                MessageFactory.Text("✅ Subscription created successfully."), cancellationToken
+            await context.SendActivityAsync(
+                MessageFactory.Text("✅ Subscription created successfully."), ct
             );
         }
         catch (Exception e)
         {
-            await turnContext.SendActivityAsync(
-                MessageFactory.Text($"❌ Error creating subscription: {e.Message}"), cancellationToken
+            await context.SendActivityAsync(
+                MessageFactory.Text($"❌ Error creating subscription: {e.Message}"), ct
             );
         }
     }
