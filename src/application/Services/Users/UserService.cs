@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Diagnostics;
 using ADAM.Application.Objects;
 using ADAM.Domain;
 using ADAM.Domain.Models;
@@ -109,6 +111,46 @@ public class UserService(
             .ExecuteUpdateAsync(
                 u => u.SetProperty(x => x.AcceptsDataStorage, true)
             );
+    }
+
+    public async Task<IEnumerable<(User u, string message)>> GetUsersWithMatchingSubscriptionsAsync(
+        List<string> merchantNamesAndMeals)
+    {
+        var tuples = await _userRepository.GetUsersWithMatchingSubscriptionsAsync(merchantNamesAndMeals);
+        List<(User User, string message)> output = [];
+
+        foreach (var tuple in tuples)
+        {
+            var matchingCompanies = merchantNamesAndMeals.Where(
+                mnam => tuple.subscriptions.Any(
+                    s => s.Type is SubscriptionType.Merchant
+                         && (s.Value.Equals(mnam, StringComparison.InvariantCultureIgnoreCase)
+                             || mnam.Contains(s.Value, StringComparison.InvariantCultureIgnoreCase))
+                )
+            ).Distinct();
+
+            var matchingOffers = merchantNamesAndMeals.Where(
+                mnam => tuple.subscriptions.Any(
+                    s => s.Type is SubscriptionType.Offer
+                         && (s.Value.Equals(mnam, StringComparison.InvariantCultureIgnoreCase)
+                             || mnam.Contains(s.Value, StringComparison.InvariantCultureIgnoreCase))
+                )
+            );
+
+            var message = $"""
+                           🍔 Hey! I found you something to eat.
+
+                           # Companies
+                           {string.Join(", ", matchingCompanies)}
+
+                           # Food
+                           {string.Join("\n\n", matchingOffers)}
+                           """;
+
+            output.Add((tuple.user, message));
+        }
+
+        return output;
     }
 
     private static void ValidateSubscriptionValueLength(string value)

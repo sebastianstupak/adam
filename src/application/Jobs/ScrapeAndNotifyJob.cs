@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using ADAM.Application.Services;
+using ADAM.Application.Services.Users;
 using ADAM.Application.Sites;
 using ADAM.Domain;
 using ADAM.Domain.Models;
@@ -12,12 +13,13 @@ namespace ADAM.Application.Jobs;
 public class ScrapeAndNotifyJob(
     ILogger<ScrapeAndNotifyJob> logger,
     AppDbContext dbCtx,
-    IUserRepository userRepository,
+    IUserService userService,
     IEnumerable<IMerchantSite> merchantSites,
     MessageSendingService messageSender,
     IConfiguration configuration
 ) : IJob
 {
+    private readonly IUserService _userService = userService;
     private readonly MessageSendingService _messageSender = messageSender;
     private readonly IConfiguration _configuration = configuration;
     private readonly IList<IMerchantSite> _merchantSites = merchantSites.ToList();
@@ -53,12 +55,12 @@ public class ScrapeAndNotifyJob(
             merchantNamesAndMeals.AddRange(merchantOffers.Select(mo => mo.Meal));
             merchantNamesAndMeals.AddRange(merchantOffers.Select(mo => mo.Name));
 
-            var users = await userRepository.GetUsersWithMatchingSubscriptionsAsync(merchantNamesAndMeals);
-            foreach (var user in users)
+            var tuples = await _userService.GetUsersWithMatchingSubscriptionsAsync(merchantNamesAndMeals);
+            foreach (var tuple in tuples)
                 await _messageSender.SendMessageToUserAsync(
                     _configuration["BotId"] ?? throw new Exception("NULL BOT ID"),
-                    user.TeamsId,
-                    "HELLO!!!"
+                    tuple.u.TeamsId,
+                    tuple.message
                 );
 
             dbCtx.AddRange(merchantOffers);

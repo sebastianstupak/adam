@@ -51,23 +51,41 @@ public class AdamBot(
         if (parts.Length < 2)
             return;
 
-        if (!StringMatchesFullOrSubString(parts.ElementAtOrDefault(1) ?? "", CommandConstants.Consent))
-            await PersistConversationReferenceAsync(teamsId, turnContext);
-
         if (StringMatchesFullOrSubString(parts[1], CommandConstants.Subscribe, [0, 3, 0, 1]))
         {
             switch (parts[2])
             {
                 case CommandConstants.List:
                 {
-                    await GetCommand<ListSubscriptionsCommands>().HandleAsync(turnContext, parts, cancellationToken);
+                    await GetCommand<ListSubscriptionsCommand>().HandleAsync(turnContext, parts, cancellationToken);
                     break;
                 }
 
                 case CommandConstants.Company:
                 case CommandConstants.Food:
                 {
-                    await GetCommand<CreateSubscriptionCommand>().HandleAsync(turnContext, parts, cancellationToken);
+                    var user = await _dbCtx.Users.FirstOrDefaultAsync(
+                        u => u.TeamsId == teamsId && u.ConversationReference != null,
+                        cancellationToken: cancellationToken
+                    );
+
+                    if (user is null)
+                    {
+                        await turnContext.SendActivityAsync(
+                            MessageFactory.Text("""
+                                                ❌ No channel set!
+
+                                                Let me know where to alert you using `@adam here`.
+                                                """),
+                            cancellationToken
+                        );
+
+                        return;
+                    }
+
+                    await GetCommand<CreateSubscriptionCommand>()
+                        .HandleAsync(turnContext, parts, cancellationToken);
+                    
                     break;
                 }
 
@@ -134,39 +152,4 @@ public class AdamBot(
     }
 
     #endregion
-
-    private async Task PersistConversationReferenceAsync(string teamsId, ITurnContext turnContext)
-    {
-        var convRef = turnContext.Activity.GetConversationReference();
-        ArgumentNullException.ThrowIfNull(convRef);
-
-        var user = await _dbCtx.Users.FirstOrDefaultAsync(u =>
-            u.TeamsId == teamsId
-        );
-        ArgumentNullException.ThrowIfNull(user);
-
-        var crExists = await _dbCtx.ConversationReferences.AnyAsync(cr => cr.UserId == user.Id);
-
-        if (crExists)
-        {
-            var crToUpdate = await _dbCtx.ConversationReferences
-                .Where(cr => cr.UserId == user.Id)
-                .FirstAsync();
-
-            crToUpdate.ServiceUrl = convRef.ServiceUrl;
-            crToUpdate.ConversationId = convRef.Conversation.Id;
-        }
-        else
-        {
-            var obj = new Domain.Models.ConversationReference
-            {
-                UserId = user.Id,
-                ServiceUrl = convRef.ServiceUrl,
-                ConversationId = convRef.Conversation.Id
-            };
-            _dbCtx.ConversationReferences.Add(obj);
-        }
-
-        await _dbCtx.SaveChangesAsync();
-    }
 }

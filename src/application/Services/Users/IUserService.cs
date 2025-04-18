@@ -1,4 +1,6 @@
+using System.Collections;
 using ADAM.Application.Objects;
+using ADAM.Domain.Models;
 
 namespace ADAM.Application.Services.Users;
 
@@ -16,4 +18,6 @@ public interface IUserService
     
     Task<bool> DidUserAcceptDataStorageAsync(string teamsId);
     Task UpdateUserConsentAsync(string teamsId);
+    Task<IEnumerable<(User u, string message)>> GetUsersWithMatchingSubscriptionsAsync(
+        List<string> merchantNamesAndMeals);
 }

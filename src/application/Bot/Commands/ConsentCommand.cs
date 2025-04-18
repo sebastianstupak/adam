@@ -13,7 +13,11 @@ public class ConsentCommand(IUserService userService) : Command
         {
             await _userService.UpdateUserConsentAsync(context.Activity.From.Id);
             await context.SendActivityAsync(
-                MessageFactory.Text("✅ Consent updated."), ct
+                MessageFactory.Text("""
+                                    ✅ Consent updated.
+
+                                    To receive alerts based on your subscriptions, set a channel I should message you in using `@adam here`.
+                                    """), ct
             );
         }
         catch

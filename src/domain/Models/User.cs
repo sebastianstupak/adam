@@ -8,5 +8,5 @@ public class User
     public required bool AcceptsDataStorage { get; set; }
 
     public virtual List<Subscription> Subscriptions { get; set; } = [];
-    public virtual ConversationReference ConversationReference { get; set; }
+    public virtual ConversationReference? ConversationReference { get; set; }
 }

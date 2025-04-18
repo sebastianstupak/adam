@@ -6,7 +6,7 @@ namespace ADAM.Application.Bot.Commands;
 
 public class HereCommand(AppDbContext dbCtx) : Command
 {
-    private readonly AppDbContext _dbCtx;
+    private readonly AppDbContext _dbCtx = dbCtx;
 
     protected override async Task HandleCommandAsync(ITurnContext context, string[] cmdParts, CancellationToken ct)
     {
@@ -44,6 +44,10 @@ public class HereCommand(AppDbContext dbCtx) : Command
             }
 
             await _dbCtx.SaveChangesAsync(ct);
+            
+            await context.SendActivityAsync(
+                MessageFactory.Text($"✅ I will message you in this channel from now on!"), ct
+            );
         }
         catch (Exception ex)
         {

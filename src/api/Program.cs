@@ -12,9 +12,14 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddAuthorization();
+
+builder.Services.AddBotFramework();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddLogging();
+
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
                        throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
@@ -48,7 +53,20 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+app.Use(async (context, next) =>
+{
+    if (context.Request.IsHttps && context.Request.Path.StartsWithSegments("/api/messages"))
+    {
+        var url = "http://" + context.Request.Host + context.Request.Path +
+                  context.Request.QueryString;
+
+        context.Response.Redirect(url);
+
+        return;
+    }
+
+    await next();
+});
 
 app.RegisterAdamEndpoints();
 

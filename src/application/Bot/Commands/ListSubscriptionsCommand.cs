@@ -4,7 +4,7 @@ using Microsoft.Bot.Builder;
 
 namespace ADAM.Application.Bot.Commands;
 
-public class ListSubscriptionsCommands(IUserService userService) : Command
+public class ListSubscriptionsCommand(IUserService userService) : Command
 {
     private readonly IUserService _userService = userService;
 

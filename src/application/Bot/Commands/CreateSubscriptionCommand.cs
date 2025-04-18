@@ -16,7 +16,10 @@ public class CreateSubscriptionCommand(IUserService userService) : Command
             await _userService.CreateUserSubscriptionAsync(new CreateUserSubscriptionDto
             {
                 TeamsId = context.Activity.From.Id,
-                Type = SubscriptionType.Merchant,
+                Type = cmdParts[2].Equals(CommandConstants.Company,
+                    StringComparison.InvariantCultureIgnoreCase)
+                    ? SubscriptionType.Merchant
+                    : SubscriptionType.Offer,
                 Value = string.Join(" ", cmdParts[3..])
             });
 
