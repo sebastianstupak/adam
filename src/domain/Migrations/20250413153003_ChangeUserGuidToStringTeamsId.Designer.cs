@@ -3,6 +3,7 @@ using System;
 using ADAM.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ADAM.Domain.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250413153003_ChangeUserGuidToStringTeamsId")]
+    partial class ChangeUserGuidToStringTeamsId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,33 +24,6 @@ namespace ADAM.Domain.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("ADAM.Domain.Models.ConversationReference", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<string>("ConversationId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("ServiceUrl")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<long>("UserId")
-                        .HasColumnType("bigint");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("ConversationReferences");
-                });
 
             modelBuilder.Entity("ADAM.Domain.Models.MerchantOffer", b =>
                 {
@@ -116,9 +92,6 @@ namespace ADAM.Domain.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
-                    b.Property<bool>("AcceptsDataStorage")
-                        .HasColumnType("boolean");
-
                     b.Property<DateTime>("CreationDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -129,17 +102,6 @@ namespace ADAM.Domain.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("ADAM.Domain.Models.ConversationReference", b =>
-                {
-                    b.HasOne("ADAM.Domain.Models.User", "User")
-                        .WithOne("ConversationReference")
-                        .HasForeignKey("ADAM.Domain.Models.ConversationReference", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ADAM.Domain.Models.Subscription", b =>
@@ -155,9 +117,6 @@ namespace ADAM.Domain.Migrations
 
             modelBuilder.Entity("ADAM.Domain.Models.User", b =>
                 {
-                    b.Navigation("ConversationReference")
-                        .IsRequired();
-
                     b.Navigation("Subscriptions");
                 });
 #pragma warning restore 612, 618

@@ -1,8 +1,11 @@
+using System.Collections;
+using System.Diagnostics;
 using ADAM.Application.Objects;
 using ADAM.Domain;
 using ADAM.Domain.Models;
 using ADAM.Domain.Repositories.Subscriptions;
 using ADAM.Domain.Repositories.Users;
+using Microsoft.EntityFrameworkCore;
 
 namespace ADAM.Application.Services.Users;
 
@@ -12,14 +15,23 @@ public class UserService(
     AppDbContext dbCtx
 ) : IUserService
 {
-    public async Task<IEnumerable<GetUserSubscriptionDto>> GetUserSubscriptionsAsync(Guid userGuid)
+    private readonly IUserRepository _userRepository = userRepository;
+    private readonly ISubscriptionRepository _subscriptionRepository = subscriptionRepository;
+    private readonly AppDbContext _dbCtx = dbCtx;
+
+    public async Task CreateUserAsync(string teamsId)
     {
-        var user = await userRepository.GetUserAsync(userGuid);
+        await _userRepository.CreateUserAsync(teamsId);
+    }
 
-        if (user == null)
-            await userRepository.CreateUserAsync(userGuid);
+    public async Task<IEnumerable<GetUserSubscriptionDto>> GetUserSubscriptionsAsync(string teamsId)
+    {
+        var user = await _userRepository.GetUserAsync(teamsId);
 
-        var subscriptions = await subscriptionRepository.GetSubscriptionsAsync(userGuid);
+        if (user is null)
+            await CreateUserAsync(teamsId);
+
+        var subscriptions = await _subscriptionRepository.GetSubscriptionsAsync(teamsId);
 
         return subscriptions.Select(s => new GetUserSubscriptionDto
         {
@@ -33,12 +45,12 @@ public class UserService(
     {
         ValidateSubscriptionValueLength(dto.Value);
 
-        var user = await userRepository.GetUserAsync(dto.UserGuid);
+        var user = await _userRepository.GetUserAsync(dto.TeamsId);
 
-        if (user == null)
+        if (user is null)
         {
-            await userRepository.CreateUserAsync(dto.UserGuid);
-            user = await userRepository.GetUserAsync(dto.UserGuid);
+            await CreateUserAsync(dto.TeamsId);
+            user = await _userRepository.GetUserAsync(dto.TeamsId);
         }
 
         user!.Subscriptions.Add(new Subscription
@@ -47,34 +59,101 @@ public class UserService(
             Value = dto.Value,
         });
 
-        await dbCtx.SaveChangesAsync();
+        await _dbCtx.SaveChangesAsync();
     }
 
-    public async Task UpdateUserSubscriptionAsync(int id, UpdateUserSubscriptionDto dto)
+    public async Task UpdateUserSubscriptionAsync(int id, UpdateUserSubscriptionDto dto, string teamsId)
     {
         ValidateSubscriptionValueLength(dto.NewValue);
 
-        var subscription = await subscriptionRepository.GetSubscriptionAsync(id);
+        var subscription = await _subscriptionRepository.GetSubscriptionAsync(id);
 
         if (subscription is null)
             throw new SubscriptionNotFoundException();
 
+        if (teamsId is not null
+            && !subscription.User.TeamsId.Equals(teamsId, StringComparison.InvariantCultureIgnoreCase))
+            throw new Exception("You can't modify this subscription.");
+
         subscription.Value = dto.NewValue;
 
-        await dbCtx.SaveChangesAsync();
+        await _dbCtx.SaveChangesAsync();
     }
 
     public async Task DeleteUserSubscriptionAsync(int id)
     {
-        var subscription = await subscriptionRepository.GetSubscriptionAsync(id);
+        var subscription = await _subscriptionRepository.GetSubscriptionAsync(id);
 
         if (subscription is null)
             throw new SubscriptionNotFoundException();
 
-        await subscriptionRepository.DeleteAsync(id);
+        await _subscriptionRepository.DeleteAsync(id);
     }
 
-    private void ValidateSubscriptionValueLength(string value)
+    public async Task<bool> DidUserAcceptDataStorageAsync(string teamsId)
+    {
+        var user = await _dbCtx.Users.FirstOrDefaultAsync(
+            u => u.TeamsId == teamsId
+        );
+
+        return user is not null && user.AcceptsDataStorage;
+    }
+
+    public async Task UpdateUserConsentAsync(string teamsId)
+    {
+        var user = await _userRepository.GetUserAsync(teamsId);
+
+        if (user is null)
+            await CreateUserAsync(teamsId);
+
+        await _dbCtx.Users
+            .Where(u => u.TeamsId == teamsId)
+            .ExecuteUpdateAsync(
+                u => u.SetProperty(x => x.AcceptsDataStorage, true)
+            );
+    }
+
+    public async Task<IEnumerable<(User u, string message)>> GetUsersWithMatchingSubscriptionsAsync(
+        List<string> merchantNamesAndMeals)
+    {
+        var tuples = await _userRepository.GetUsersWithMatchingSubscriptionsAsync(merchantNamesAndMeals);
+        List<(User User, string message)> output = [];
+
+        foreach (var tuple in tuples)
+        {
+            var matchingCompanies = merchantNamesAndMeals.Where(
+                mnam => tuple.subscriptions.Any(
+                    s => s.Type is SubscriptionType.Merchant
+                         && (s.Value.Equals(mnam, StringComparison.InvariantCultureIgnoreCase)
+                             || mnam.Contains(s.Value, StringComparison.InvariantCultureIgnoreCase))
+                )
+            ).Distinct();
+
+            var matchingOffers = merchantNamesAndMeals.Where(
+                mnam => tuple.subscriptions.Any(
+                    s => s.Type is SubscriptionType.Offer
+                         && (s.Value.Equals(mnam, StringComparison.InvariantCultureIgnoreCase)
+                             || mnam.Contains(s.Value, StringComparison.InvariantCultureIgnoreCase))
+                )
+            );
+
+            var message = $"""
+                           🍔 Hey! I found you something to eat.
+
+                           # Companies
+                           {string.Join(", ", matchingCompanies)}
+
+                           # Food
+                           {string.Join("\n\n", matchingOffers)}
+                           """;
+
+            output.Add((tuple.user, message));
+        }
+
+        return output;
+    }
+
+    private static void ValidateSubscriptionValueLength(string value)
     {
         if (string.IsNullOrEmpty(value) || string.IsNullOrWhiteSpace(value) || value.Length > 255)
             throw new ArgumentOutOfRangeException(value);

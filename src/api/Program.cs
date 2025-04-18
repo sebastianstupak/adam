@@ -1,7 +1,8 @@
 using System.Text.Json;
 using ADAM.API;
 using ADAM.API.Extensions;
-using ADAM.API.Jobs;
+using ADAM.Application.Extensions;
+using ADAM.Application.Jobs;
 using ADAM.Domain;
 using Hangfire;
 using Hangfire.Dashboard;
@@ -11,15 +12,19 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddAuthorization();
+
+builder.Services.AddBotFramework();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddLogging();
 
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
                        throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString));
+builder.Services.AddDbContext<AppDbContext>(opts => opts.UseNpgsql(connectionString));
 
 builder.Services.AddHealthChecks()
     .AddNpgSql(connectionString, name: "database")
@@ -35,7 +40,9 @@ builder.Services.AddHangfireServer();
 builder.Services.AddHttpClient();
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSites().AddAdamServices();
+builder.Services
+    .AddSites()
+    .AddAdamServices();
 
 var app = builder.Build();
 
@@ -46,7 +53,20 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+app.Use(async (context, next) =>
+{
+    if (context.Request.IsHttps && context.Request.Path.StartsWithSegments("/api/messages"))
+    {
+        var url = "http://" + context.Request.Host + context.Request.Path +
+                  context.Request.QueryString;
+
+        context.Response.Redirect(url);
+
+        return;
+    }
+
+    await next();
+});
 
 app.RegisterAdamEndpoints();
 

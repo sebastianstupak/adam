@@ -1,4 +1,4 @@
-﻿namespace ADAM.API.Jobs;
+﻿namespace ADAM.Application.Jobs;
 
 public interface IJob
 {

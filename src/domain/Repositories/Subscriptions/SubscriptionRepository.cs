@@ -8,6 +8,7 @@ public class SubscriptionRepository(AppDbContext dbCtx) : ISubscriptionRepositor
     public async Task<Subscription?> GetSubscriptionAsync(long subscriptionId)
     {
         return await dbCtx.Subscriptions
+            .Include(s => s.User)
             .FirstOrDefaultAsync(s => s.Id == subscriptionId);
     }
 
@@ -18,10 +19,10 @@ public class SubscriptionRepository(AppDbContext dbCtx) : ISubscriptionRepositor
             .ExecuteDeleteAsync();
     }
 
-    public async Task<List<Subscription>> GetSubscriptionsAsync(Guid userGuid)
+    public async Task<List<Subscription>> GetSubscriptionsAsync(string teamsId)
     {
         return await dbCtx.Subscriptions
-            .Where(s => s.User.Guid == userGuid)
+            .Where(s => s.User.TeamsId == teamsId)
             .ToListAsync();
     }
 }

@@ -1,18 +1,27 @@
 ﻿using System.Collections.Concurrent;
+using ADAM.Application.Services;
+using ADAM.Application.Services.Users;
 using ADAM.Application.Sites;
 using ADAM.Domain;
 using ADAM.Domain.Models;
 using ADAM.Domain.Repositories.Users;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
-namespace ADAM.API.Jobs;
+namespace ADAM.Application.Jobs;
 
 public class ScrapeAndNotifyJob(
     ILogger<ScrapeAndNotifyJob> logger,
     AppDbContext dbCtx,
-    IUserRepository userRepository,
-    IEnumerable<IMerchantSite> merchantSites
+    IUserService userService,
+    IEnumerable<IMerchantSite> merchantSites,
+    MessageSendingService messageSender,
+    IConfiguration configuration
 ) : IJob
 {
+    private readonly IUserService _userService = userService;
+    private readonly MessageSendingService _messageSender = messageSender;
+    private readonly IConfiguration _configuration = configuration;
     private readonly IList<IMerchantSite> _merchantSites = merchantSites.ToList();
 
     public async Task ExecuteAsync()
@@ -46,8 +55,13 @@ public class ScrapeAndNotifyJob(
             merchantNamesAndMeals.AddRange(merchantOffers.Select(mo => mo.Meal));
             merchantNamesAndMeals.AddRange(merchantOffers.Select(mo => mo.Name));
 
-            var users = await userRepository.GetUsersWithMatchingSubscriptionsAsync(merchantNamesAndMeals);
-            // TODO: Notify subscribed users
+            var tuples = await _userService.GetUsersWithMatchingSubscriptionsAsync(merchantNamesAndMeals);
+            foreach (var tuple in tuples)
+                await _messageSender.SendMessageToUserAsync(
+                    _configuration["BotId"] ?? throw new Exception("NULL BOT ID"),
+                    tuple.u.TeamsId,
+                    tuple.message
+                );
 
             dbCtx.AddRange(merchantOffers);
             await dbCtx.SaveChangesAsync();
