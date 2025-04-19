@@ -4,5 +4,5 @@ public interface ISubscriptionRepository
 {
     Task<List<Models.Subscription>> GetSubscriptionsAsync(Guid userGuid);
     Task<Models.Subscription?> GetSubscriptionAsync(long id);
-    Task DeleteAsync(long id);
+    Task<int> DeleteAsync(long id);
 }
