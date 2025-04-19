@@ -24,7 +24,10 @@ builder.Services.AddLogging();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
                        throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-builder.Services.AddDbContext<AppDbContext>(opts => opts.UseNpgsql(connectionString));
+if (!builder.Environment.IsEnvironment("Test"))
+{
+    builder.Services.AddDbContext<AppDbContext>(opts => opts.UseNpgsql(connectionString));
+}
 
 builder.Services.AddHealthChecks()
     .AddNpgSql(connectionString, name: "database")
@@ -111,3 +114,5 @@ namespace ADAM.API
         public bool Authorize(DashboardContext context) => true;
     }
 }
+
+public partial class Program;

@@ -12,9 +12,9 @@ public class SubscriptionRepository(AppDbContext dbCtx) : ISubscriptionRepositor
             .FirstOrDefaultAsync(s => s.Id == subscriptionId);
     }
 
-    public async Task DeleteAsync(long id)
+    public async Task<int> DeleteAsync(long id)
     {
-        var amount = await dbCtx.Subscriptions
+        return await dbCtx.Subscriptions
             .Where(s => s.Id == id)
             .ExecuteDeleteAsync();
     }

@@ -7,7 +7,7 @@ public class UserRepository(AppDbContext dbCtx) : IUserRepository
 {
     private readonly AppDbContext _dbCtx = dbCtx;
     
-    public Task<Models.User?> GetUserAsync(string teamsId)
+    public Task<User?> GetUserAsync(string teamsId)
     {
         return _dbCtx.Users.FirstOrDefaultAsync(u => u.TeamsId == teamsId);
     }
