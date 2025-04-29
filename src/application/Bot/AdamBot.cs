@@ -85,7 +85,7 @@ public class AdamBot(
 
                     await GetCommand<CreateSubscriptionCommand>()
                         .HandleAsync(turnContext, parts, cancellationToken);
-                    
+
                     break;
                 }
 

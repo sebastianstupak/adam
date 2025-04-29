@@ -5,8 +5,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ADAM.IntegrationTests.Domain;
 
-[ClassDataSource<TestWebAppFactory>(Shared = SharedType.Keyed, Key = "Subscriptions")]
-[Property("TestCategory", "Container")]
+[Property("Infrastructure", "Container")]
+[Property("Type", "Subscriptions")]
 public class UserRepositoryTests(TestWebAppFactory factory) : IntegrationTestBase(factory)
 {
     private readonly List<string> _names = ["bryndzové halušky", "KFC", "naan & curry", "tahiti"];
@@ -44,7 +44,8 @@ public class UserRepositoryTests(TestWebAppFactory factory) : IntegrationTestBas
     {
         DbCtx.Users.Add(new User
         {
-            Guid = Guid.NewGuid(),
+            TeamsId = Guid.NewGuid()
+                .ToString(),
             CreationDate = DateTime.UtcNow,
             Subscriptions =
             [
@@ -53,7 +54,8 @@ public class UserRepositoryTests(TestWebAppFactory factory) : IntegrationTestBas
                     Type = subscriptionType,
                     Value = subscriptionValue,
                 }
-            ]
+            ],
+            AcceptsDataStorage = false
         });
 
         await DbCtx.SaveChangesAsync();

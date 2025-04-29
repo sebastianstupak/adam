@@ -27,18 +27,19 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 if (!builder.Environment.IsEnvironment("Test"))
 {
     builder.Services.AddDbContext<AppDbContext>(opts => opts.UseNpgsql(connectionString));
+
+    builder.Services.AddHealthChecks()
+        .AddNpgSql(connectionString, name: "database")
+        .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy());
+
+    builder.Services.AddHangfire(config => config
+        .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
+        .UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UsePostgreSqlStorage(options => options.UseNpgsqlConnection(connectionString)));
+
+    builder.Services.AddHangfireServer();
 }
-
-builder.Services.AddHealthChecks()
-    .AddNpgSql(connectionString, name: "database")
-    .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy());
-
-builder.Services.AddHangfire(config => config
-    .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
-    .UseSimpleAssemblyNameTypeSerializer()
-    .UseRecommendedSerializerSettings()
-    .UsePostgreSqlStorage(options => options.UseNpgsqlConnection(connectionString)));
-builder.Services.AddHangfireServer();
 
 builder.Services.AddHttpClient();
 
@@ -73,37 +74,40 @@ app.Use(async (context, next) =>
 
 app.RegisterAdamEndpoints();
 
-app.MapHealthChecks("/health", new HealthCheckOptions
+if (!app.Environment.IsEnvironment("test"))
 {
-    ResponseWriter = async (context, report) =>
+    app.MapHealthChecks("/health", new HealthCheckOptions
     {
-        context.Response.ContentType = "application/json";
-
-        var response = new
+        ResponseWriter = async (context, report) =>
         {
-            Status = report.Status.ToString(),
-            HealthChecks = report.Entries.Select(e => new
+            context.Response.ContentType = "application/json";
+
+            var response = new
             {
-                Component = e.Key,
-                Status = e.Value.Status.ToString(),
-                Description = e.Value.Description
-            }),
-            TotalDuration = report.TotalDuration
-        };
+                Status = report.Status.ToString(),
+                HealthChecks = report.Entries.Select(e => new
+                {
+                    Component = e.Key,
+                    Status = e.Value.Status.ToString(),
+                    Description = e.Value.Description
+                }),
+                TotalDuration = report.TotalDuration
+            };
 
-        await context.Response.WriteAsync(JsonSerializer.Serialize(response));
-    }
-});
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+        }
+    });
 
-app.UseHangfireDashboard("/hangfire", new DashboardOptions
-{
-    Authorization = [new AllowAllConnectionsFilter()]
-});
+    app.UseHangfireDashboard("/hangfire", new DashboardOptions
+    {
+        Authorization = [new AllowAllConnectionsFilter()]
+    });
 
-RecurringJob.AddOrUpdate<ScrapeAndNotifyJob>(
-    "daily-scrape-and-notify-job",
-    scraper => scraper.ExecuteAsync(),
-    Cron.Daily(9, 0));
+    RecurringJob.AddOrUpdate<ScrapeAndNotifyJob>(
+        "daily-scrape-and-notify-job",
+        scraper => scraper.ExecuteAsync(),
+        Cron.Daily(9, 0));
+}
 
 app.Run();
 

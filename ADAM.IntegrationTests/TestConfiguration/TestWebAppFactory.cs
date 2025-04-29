@@ -15,13 +15,11 @@ public sealed class TestWebAppFactory : WebApplicationFactory<Program>, IAsyncIn
     private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
         .WithImage("postgres:latest")
         .Build();
-
+    
     public async Task InitializeAsync()
     {
         await _container.StartAsync();
-        
-        CreateDefaultClient();
-        
+
         CreateDb();
     }
 

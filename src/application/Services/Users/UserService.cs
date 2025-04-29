@@ -106,11 +106,10 @@ public class UserService(
         if (user is null)
             await CreateUserAsync(teamsId);
 
-        await _dbCtx.Users
-            .Where(u => u.TeamsId == teamsId)
-            .ExecuteUpdateAsync(
-                u => u.SetProperty(x => x.AcceptsDataStorage, true)
-            );
+        user = await _userRepository.GetUserAsync(teamsId);
+
+        user!.AcceptsDataStorage = true;
+        await _dbCtx.SaveChangesAsync();
     }
 
     public async Task<IEnumerable<(User u, string message)>> GetUsersWithMatchingSubscriptionsAsync(

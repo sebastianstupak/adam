@@ -6,8 +6,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ADAM.IntegrationTests.API;
 
-[ClassDataSource<TestWebAppFactory>(Shared = SharedType.Keyed, Key = "Subscriptions")]
-[Property("TestCategory", "Container")]
+[Property("Infrastructure", "Container")]
+[Property("Type", "Subscriptions")]
 public class CreateUserSubscriptionEndpointTests(TestWebAppFactory factory) : IntegrationTestBase(factory)
 {
     protected override Task OnInitAsync()
@@ -73,7 +73,7 @@ public class CreateUserSubscriptionEndpointTests(TestWebAppFactory factory) : In
     {
         var dto = new CreateUserSubscriptionDto
         {
-            UserGuid = Guid.NewGuid(),
+            TeamsId = Guid.NewGuid().ToString(),
             Type = (SubscriptionType)Random.Shared.Next(0, 2), // 0 or 1 
             Value = "test"
         };
@@ -87,7 +87,7 @@ public class CreateUserSubscriptionEndpointTests(TestWebAppFactory factory) : In
 
         await Assert.That(response).IsNotNull();
         await Assert.That(response.IsSuccessStatusCode).IsTrue();
-        await Assert.That(DbCtx.Subscriptions.AnyAsync(s => s.User.Guid == dto.UserGuid)).IsTrue();
+        await Assert.That(DbCtx.Subscriptions.AnyAsync(s => s.User.TeamsId == dto.TeamsId)).IsTrue();
 
         return (await DbCtx.Subscriptions.FirstAsync()).Id;
     }
