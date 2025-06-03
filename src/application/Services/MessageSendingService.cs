@@ -5,10 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ADAM.Application.Services;
 
-public class MessageSendingService(
-    IBotFrameworkHttpAdapter adapter,
-    AppDbContext dbCtx
-)
+public class MessageSendingService(IBotFrameworkHttpAdapter adapter, AppDbContext dbCtx)
 {
     private readonly IBotFrameworkHttpAdapter _adapter = adapter;
     private readonly AppDbContext _dbCtx = dbCtx;
@@ -28,6 +25,7 @@ public class MessageSendingService(
         var conversationReference = new ConversationReference
         {
             Bot = new ChannelAccount { Id = botId },
+            User = new ChannelAccount { Id = teamsId },
             Conversation = new ConversationAccount { Id = convRef.ConversationId },
             ServiceUrl = convRef.ServiceUrl
         };

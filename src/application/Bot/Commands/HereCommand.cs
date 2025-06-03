@@ -1,4 +1,5 @@
 using ADAM.Domain;
+using ADAM.Domain.Models;
 using Microsoft.Bot.Builder;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,6 +13,7 @@ public class HereCommand(AppDbContext dbCtx) : Command
     {
         try
         {
+            // convRef -> conversation reference
             var convRef = context.Activity.GetConversationReference();
             ArgumentNullException.ThrowIfNull(convRef);
 
@@ -20,31 +22,29 @@ public class HereCommand(AppDbContext dbCtx) : Command
 
             ArgumentNullException.ThrowIfNull(user);
 
-            var crExists =
-                await _dbCtx.ConversationReferences.AnyAsync(cr => cr.UserId == user.Id, cancellationToken: ct);
+            var convRefToUpdate = await _dbCtx.ConversationReferences
+                .Where(cr => cr.UserId == user.Id)
+                .FirstOrDefaultAsync(cancellationToken: ct);
 
-            if (crExists)
+            if (convRefToUpdate is not null)
             {
-                var crToUpdate = await _dbCtx.ConversationReferences
-                    .Where(cr => cr.UserId == user.Id)
-                    .FirstAsync(cancellationToken: ct);
-
-                crToUpdate.ServiceUrl = convRef.ServiceUrl;
-                crToUpdate.ConversationId = convRef.Conversation.Id;
+                convRefToUpdate.ServiceUrl = convRef.ServiceUrl;
+                convRefToUpdate.ConversationId = convRef.Conversation.Id;
             }
             else
             {
-                var obj = new Domain.Models.ConversationReference
+                var newConvRef = new ConversationReference
                 {
                     UserId = user.Id,
                     ServiceUrl = convRef.ServiceUrl,
                     ConversationId = convRef.Conversation.Id
                 };
-                _dbCtx.ConversationReferences.Add(obj);
+
+                _dbCtx.ConversationReferences.Add(newConvRef);
             }
 
             await _dbCtx.SaveChangesAsync(ct);
-            
+
             await context.SendActivityAsync(
                 MessageFactory.Text($"✅ I will message you in this channel from now on!"), ct
             );

@@ -79,9 +79,7 @@ public class AdamBot(IUserService userService, AppDbContext dbCtx, IEnumerable<I
                         return;
                     }
 
-                    await GetCommand<CreateSubscriptionCommand>()
-                        .HandleAsync(turnContext, parts, cancellationToken);
-
+                    await GetCommand<CreateSubscriptionCommand>().HandleAsync(turnContext, parts, cancellationToken);
                     break;
                 }
 
@@ -111,6 +109,15 @@ public class AdamBot(IUserService userService, AppDbContext dbCtx, IEnumerable<I
 
     #region Helpers
 
+    /// <summary>
+    /// Checks whether a string matches a target string, or any of its substrings declared as index pairs.
+    /// </summary>
+    /// <param name="testee">A string to test</param>
+    /// <param name="target">The target to match against</param>
+    /// <param name="substringLimits">Optional array of integers,
+    ///              where every two entries are considered the beginning and end indexes of the target.</param>
+    /// <returns>TRUE, if matches</returns>
+    /// <exception cref="ArgumentException">In case the int[] of pairs contains an odd amount of values.</exception>
     private static bool StringMatchesFullOrSubString(string testee, string target, int[]? substringLimits = null)
     {
         var match = false;
@@ -122,20 +129,24 @@ public class AdamBot(IUserService userService, AppDbContext dbCtx, IEnumerable<I
             throw new ArgumentException($"{nameof(substringLimits)} must have an even count of values.");
 
         var substringLimitPairs = new List<(int, int)>();
-        for (var i = 0; i < substringLimits.Length; i += 2)
+        for (var i = 0; i < substringLimits.Length; i += 2) // Create pairs
         {
             if (i + 1 < substringLimits.Length)
                 substringLimitPairs.Add((substringLimits[i], substringLimits[i + 1]));
         }
 
+        var matchesFully = testee.Equals(target, StringComparison.InvariantCultureIgnoreCase);
+
         foreach (var pair in substringLimitPairs)
         {
-            if (testee.Equals(target, StringComparison.InvariantCultureIgnoreCase)
-                || testee.Equals(target.Substring(pair.Item1, pair.Item2), StringComparison.InvariantCultureIgnoreCase))
-            {
-                match = true;
-                break;
-            }
+            var matchesSubstringPair = testee.Equals(target.Substring(pair.Item1, pair.Item2),
+                StringComparison.InvariantCultureIgnoreCase);
+
+            if (!matchesFully && !matchesSubstringPair)
+                continue;
+
+            match = true;
+            break;
         }
 
         return match;
