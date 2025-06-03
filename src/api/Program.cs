@@ -6,7 +6,7 @@ using ADAM.Application.Jobs;
 using ADAM.Domain;
 using Hangfire;
 using Hangfire.Dashboard;
-using Hangfire.PostgreSql;
+using Hangfire.SQLite;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,17 +26,17 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 if (!builder.Environment.IsEnvironment("Test"))
 {
-    builder.Services.AddDbContext<AppDbContext>(opts => opts.UseNpgsql(connectionString));
+    builder.Services.AddDbContext<AppDbContext>(opts => opts.UseSqlite(connectionString));
 
     builder.Services.AddHealthChecks()
-        .AddNpgSql(connectionString, name: "database")
+        .AddSqlite(connectionString, name: "database")
         .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy());
 
     builder.Services.AddHangfire(config => config
         .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
         .UseSimpleAssemblyNameTypeSerializer()
         .UseRecommendedSerializerSettings()
-        .UsePostgreSqlStorage(options => options.UseNpgsqlConnection(connectionString)));
+        .UseSQLiteStorage(connectionString));
 
     builder.Services.AddHangfireServer();
 }
@@ -109,6 +109,13 @@ if (!app.Environment.IsEnvironment("test"))
         Cron.Daily(9, 0));
 }
 
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await context.Database.EnsureCreatedAsync();
+    await context.Database.MigrateAsync();
+}
+
 app.Run();
 
 namespace ADAM.API
@@ -119,4 +126,5 @@ namespace ADAM.API
     }
 }
 
+// For tests
 public partial class Program;

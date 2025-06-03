@@ -7,11 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ADAM.Application.Bot;
 
-public class AdamBot(
-    IUserService userService,
-    AppDbContext dbCtx,
-    IEnumerable<ICommand> commands
-) : ActivityHandler
+public class AdamBot(IUserService userService, AppDbContext dbCtx, IEnumerable<ICommand> commands) : ActivityHandler
 {
     private readonly IUserService _userService = userService;
     private readonly AppDbContext _dbCtx = dbCtx;
