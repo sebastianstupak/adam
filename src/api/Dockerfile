@@ -25,4 +25,9 @@ FROM base AS final
 
 WORKDIR /app
 COPY --from=publish /app/publish .
+
+USER root
+RUN mkdir -p /app/data && chown app:app /app/data
+USER app
+
 ENTRYPOINT ["dotnet", "ADAM.API.dll"]
