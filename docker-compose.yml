@@ -1,3 +1,8 @@
+x-common-volumes: &common-volumes
+  - type: bind
+    source: ${HOME}/.aspnet/https
+    target: /app/.aspnet/https
+
 services:
   adam-api:
     container_name: adam-api
@@ -9,8 +14,11 @@ services:
       - ASPNETCORE_HTTP_PORTS=8080
       - ASPNETCORE_HTTPS_PORTS=8081
       - ConnectionStrings__DefaultConnection=Data Source=/app/data/adamdb.db;Cache=Shared
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=my-strong-cert-password321
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/app/.aspnet/https/adam-cert.pfx
     ports:
       - "8080:8080"
       - "8081:8081"
     volumes:
+      - *common-volumes
       - /home/visnovskya/data:/app/data
