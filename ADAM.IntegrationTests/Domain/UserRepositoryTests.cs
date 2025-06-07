@@ -46,6 +46,7 @@ public class UserRepositoryTests(TestWebAppFactory factory) : IntegrationTestBas
         {
             TeamsId = Guid.NewGuid()
                 .ToString(),
+            Name = "FooBar",
             CreationDate = DateTime.UtcNow,
             Subscriptions =
             [

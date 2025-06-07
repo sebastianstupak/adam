@@ -3,6 +3,7 @@ using System;
 using ADAM.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ADAM.Domain.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250605185849_AddNamePropertyToUser")]
+    partial class AddNamePropertyToUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.0");
@@ -45,8 +48,9 @@ namespace ADAM.Domain.Migrations
                     b.Property<DateTime>("CreationDate")
                         .HasColumnType("TEXT");
 
-                    b.Property<long>("HtmlRecordId")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("Html")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Meal")
                         .IsRequired()
@@ -61,8 +65,6 @@ namespace ADAM.Domain.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("HtmlRecordId");
 
                     b.ToTable("MerchantOffers");
                 });
@@ -92,28 +94,6 @@ namespace ADAM.Domain.Migrations
                     b.ToTable("Subscriptions");
                 });
 
-            modelBuilder.Entity("ADAM.Domain.Models.TimestampedHtmlRecord", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreationDate")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("HtmlContent")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Url")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("TimestampedHtmlRecords");
-                });
-
             modelBuilder.Entity("ADAM.Domain.Models.User", b =>
                 {
                     b.Property<long>("Id")
@@ -137,17 +117,6 @@ namespace ADAM.Domain.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("ADAM.Domain.Models.MerchantOffer", b =>
-                {
-                    b.HasOne("ADAM.Domain.Models.TimestampedHtmlRecord", "HtmlRecord")
-                        .WithMany()
-                        .HasForeignKey("HtmlRecordId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("HtmlRecord");
                 });
 
             modelBuilder.Entity("ADAM.Domain.Models.Subscription", b =>

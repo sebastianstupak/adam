@@ -4,7 +4,6 @@ using ADAM.Application.Services.Users;
 using ADAM.Application.Sites;
 using ADAM.Domain;
 using ADAM.Domain.Models;
-using ADAM.Domain.Repositories.Users;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -28,6 +27,7 @@ public class ScrapeAndNotifyJob(
     {
         try
         {
+            var botId = _configuration["BotId"] ?? throw new Exception("No bot ID present in configuration");
             var merchantOffers = new ConcurrentBag<MerchantOffer>();
 
             await Parallel.ForEachAsync(_merchantSites,
@@ -37,9 +37,22 @@ public class ScrapeAndNotifyJob(
                     {
                         logger.LogInformation("Starting web scraping for URL: {Url}", site.GetUrl());
 
-                        var offers = await site.GetOffersAsync(ct);
-                        foreach (var offer in offers)
+                        var siteOffers = await site.GetOffersAsync(ct);
+
+                        var htmlRecord = new TimestampedHtmlRecord
+                        {
+                            Url = site.GetUrl(),
+                            HtmlContent = siteOffers.SiteHtml,
+                            CreationDate = DateTime.UtcNow
+                        };
+
+                        dbCtx.TimestampedHtmlRecords.Add(htmlRecord);
+
+                        foreach (var offer in siteOffers.Offers)
+                        {
+                            offer.HtmlRecord = htmlRecord;
                             merchantOffers.Add(offer);
+                        }
 
                         logger.LogInformation("Web scraping completed successfully for URL: {Url}", site.GetUrl());
                     }
@@ -51,17 +64,22 @@ public class ScrapeAndNotifyJob(
                 }
             );
 
-            var merchantNamesAndMeals = new List<string>();
-            merchantNamesAndMeals.AddRange(merchantOffers.Select(mo => mo.Meal));
-            merchantNamesAndMeals.AddRange(merchantOffers.Select(mo => mo.Name));
+            var mealSubs = await _userService.GetUsersWithMatchingSubscriptionsAsync(
+                merchantOffers.Select(mo => mo.Meal)
+            );
+            var merchantSubs = await _userService.GetUsersWithMatchingSubscriptionsAsync(
+                merchantOffers.Select(mo => mo.MerchantName)
+            );
 
-            var tuples = await _userService.GetUsersWithMatchingSubscriptionsAsync(merchantNamesAndMeals);
-            foreach (var tuple in tuples)
-                await _messageSender.SendMessageToUserAsync(
-                    _configuration["BotId"] ?? throw new Exception("NULL BOT ID"),
-                    tuple.u.TeamsId,
-                    tuple.message
+            if (mealSubs.Any() || merchantSubs.Any())
+            {
+                await _messageSender.SendCombinedNotificationAsync(
+                    botId,
+                    mealSubs,
+                    merchantSubs,
+                    merchantOffers
                 );
+            }
 
             dbCtx.AddRange(merchantOffers);
             await dbCtx.SaveChangesAsync();

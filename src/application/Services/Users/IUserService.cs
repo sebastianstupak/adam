@@ -6,7 +6,7 @@ namespace ADAM.Application.Services.Users;
 
 public interface IUserService
 {
-    Task CreateUserAsync(string teamsId);
+    Task CreateUserAsync(string teamsId, string name);
 
     Task<IEnumerable<GetUserSubscriptionDto>> GetUserSubscriptionsAsync(string teamsId);
 
@@ -18,8 +18,7 @@ public interface IUserService
 
     Task<bool> DidUserAcceptDataStorageAsync(string teamsId);
 
-    Task UpdateUserConsentAsync(string teamsId);
+    Task UpdateUserConsentAsync(string teamsId, string name);
 
-    Task<IEnumerable<(User u, string message)>> GetUsersWithMatchingSubscriptionsAsync(
-        List<string> merchantNamesAndMeals);
+    Task<IEnumerable<UserSubscriptions>> GetUsersWithMatchingSubscriptionsAsync(IEnumerable<string> valuesToMatchAgainst);
 }

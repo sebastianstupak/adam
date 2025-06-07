@@ -50,6 +50,7 @@ public static class DiExtensions
     public static IServiceCollection AddSites(this IServiceCollection services)
     {
         services.AddScoped<IMerchantSite, AuparkSite>();
+        services.AddScoped<IMerchantSite, LittleIndiaSite>();
         services.AddScoped<IJob, ScrapeAndNotifyJob>();
         return services;
     }

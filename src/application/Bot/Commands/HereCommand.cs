@@ -17,42 +17,35 @@ public class HereCommand(AppDbContext dbCtx) : Command
             var convRef = context.Activity.GetConversationReference();
             ArgumentNullException.ThrowIfNull(convRef);
 
-            var user = await _dbCtx.Users.FirstOrDefaultAsync(u =>
-                u.TeamsId == context.Activity.From.Id, cancellationToken: ct);
-
-            ArgumentNullException.ThrowIfNull(user);
-
-            var convRefToUpdate = await _dbCtx.ConversationReferences
-                .Where(cr => cr.UserId == user.Id)
+            var globalChannelSetting = await _dbCtx.ConversationReferences
                 .FirstOrDefaultAsync(cancellationToken: ct);
 
-            if (convRefToUpdate is not null)
+            if (globalChannelSetting is not null)
             {
-                convRefToUpdate.ServiceUrl = convRef.ServiceUrl;
-                convRefToUpdate.ConversationId = convRef.Conversation.Id;
+                globalChannelSetting.ServiceUrl = convRef.ServiceUrl;
+                globalChannelSetting.ConversationId = convRef.Conversation.Id;
             }
             else
             {
-                var newConvRef = new ConversationReference
+                var newGlobalSetting = new ConversationReference
                 {
-                    UserId = user.Id,
                     ServiceUrl = convRef.ServiceUrl,
                     ConversationId = convRef.Conversation.Id
                 };
 
-                _dbCtx.ConversationReferences.Add(newConvRef);
+                _dbCtx.ConversationReferences.Add(newGlobalSetting);
             }
 
             await _dbCtx.SaveChangesAsync(ct);
 
             await context.SendActivityAsync(
-                MessageFactory.Text($"✅ I will message you in this channel from now on!"), ct
+                MessageFactory.Text($"✅ Set this channel for daily notifications!"), ct
             );
         }
         catch (Exception ex)
         {
             await context.SendActivityAsync(
-                MessageFactory.Text($"❌ Error setting current channel for contact: {ex.Message}"), ct
+                MessageFactory.Text($"❌ Error setting notification channel: {ex.Message}"), ct
             );
         }
     }

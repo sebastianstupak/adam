@@ -10,7 +10,9 @@ public class ListSubscriptionsCommand(IUserService userService) : Command
 
     protected override async Task HandleCommandAsync(ITurnContext context, string[] cmdParts, CancellationToken ct)
     {
-        var subscriptions = (await _userService.GetUserSubscriptionsAsync(context.Activity.From.Id)).ToList();
+        var subscriptions =
+            (await _userService.GetUserSubscriptionsAsync(context.Activity.From.Id))
+            .ToList();
 
         var output = subscriptions.Count != 0
             ? MessageFactory.Text(

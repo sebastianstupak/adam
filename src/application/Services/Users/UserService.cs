@@ -19,9 +19,9 @@ public class UserService(
     private readonly ISubscriptionRepository _subscriptionRepository = subscriptionRepository;
     private readonly AppDbContext _dbCtx = dbCtx;
 
-    public async Task CreateUserAsync(string teamsId)
+    public async Task CreateUserAsync(string teamsId, string name)
     {
-        await _userRepository.CreateUserAsync(teamsId);
+        await _userRepository.CreateUserAsync(teamsId, name);
     }
 
     public async Task<IEnumerable<GetUserSubscriptionDto>> GetUserSubscriptionsAsync(string teamsId)
@@ -29,7 +29,7 @@ public class UserService(
         var user = await _userRepository.GetUserAsync(teamsId);
 
         if (user is null)
-            await CreateUserAsync(teamsId);
+            throw new UserNotFoundException();
 
         var subscriptions = await _subscriptionRepository.GetSubscriptionsAsync(teamsId);
 
@@ -49,7 +49,7 @@ public class UserService(
 
         if (user is null)
         {
-            await CreateUserAsync(dto.TeamsId);
+            await CreateUserAsync(dto.TeamsId, dto.Name);
             user = await _userRepository.GetUserAsync(dto.TeamsId);
         }
 
@@ -92,19 +92,18 @@ public class UserService(
 
     public async Task<bool> DidUserAcceptDataStorageAsync(string teamsId)
     {
-        var user = await _dbCtx.Users.FirstOrDefaultAsync(
-            u => u.TeamsId == teamsId
+        var user = await _dbCtx.Users.FirstOrDefaultAsync(u => u.TeamsId == teamsId
         );
 
         return user is not null && user.AcceptsDataStorage;
     }
 
-    public async Task UpdateUserConsentAsync(string teamsId)
+    public async Task UpdateUserConsentAsync(string teamsId, string name)
     {
         var user = await _userRepository.GetUserAsync(teamsId);
 
         if (user is null)
-            await CreateUserAsync(teamsId);
+            await CreateUserAsync(teamsId, name);
 
         user = await _userRepository.GetUserAsync(teamsId);
 
@@ -112,44 +111,18 @@ public class UserService(
         await _dbCtx.SaveChangesAsync();
     }
 
-    public async Task<IEnumerable<(User u, string message)>> GetUsersWithMatchingSubscriptionsAsync(
-        List<string> merchantNamesAndMeals)
+    public async Task<IEnumerable<UserSubscriptions>> GetUsersWithMatchingSubscriptionsAsync(
+        IEnumerable<string> valuesToMatchAgainst)
     {
-        var tuples = await _userRepository.GetUsersWithMatchingSubscriptionsAsync(merchantNamesAndMeals);
-        List<(User User, string message)> output = [];
-
-        foreach (var tuple in tuples)
-        {
-            var matchingCompanies = merchantNamesAndMeals.Where(
-                mnam => tuple.subscriptions.Any(
-                    s => s.Type is SubscriptionType.Merchant
-                         && (s.Value.Equals(mnam, StringComparison.InvariantCultureIgnoreCase)
-                             || mnam.Contains(s.Value, StringComparison.InvariantCultureIgnoreCase))
-                )
-            ).Distinct();
-
-            var matchingOffers = merchantNamesAndMeals.Where(
-                mnam => tuple.subscriptions.Any(
-                    s => s.Type is SubscriptionType.Offer
-                         && (s.Value.Equals(mnam, StringComparison.InvariantCultureIgnoreCase)
-                             || mnam.Contains(s.Value, StringComparison.InvariantCultureIgnoreCase))
-                )
-            );
-
-            var message = $"""
-                           🍔 Hey! I found you something to eat.
-
-                           # Companies
-                           {string.Join(", ", matchingCompanies)}
-
-                           # Food
-                           {string.Join("\n\n", matchingOffers)}
-                           """;
-
-            output.Add((tuple.user, message));
-        }
-
-        return output;
+        return (
+            await _userRepository.GetUsersWithMatchingSubscriptionsAsync(valuesToMatchAgainst)
+        ).Select(tuple =>
+            new UserSubscriptions
+            {
+                User = tuple.user,
+                Subscriptions = tuple.subscriptions
+            }
+        );
     }
 
     private static void ValidateSubscriptionValueLength(string value)
@@ -160,3 +133,5 @@ public class UserService(
 }
 
 public class SubscriptionNotFoundException() : Exception("Subscription not found");
+
+public class UserNotFoundException() : Exception("User not found");

@@ -61,7 +61,7 @@ public class AdamBot(IUserService userService, AppDbContext dbCtx, IEnumerable<I
                 case CommandConstants.Food:
                 {
                     var user = await _dbCtx.Users.FirstOrDefaultAsync(
-                        u => u.TeamsId == teamsId && u.ConversationReference != null,
+                        u => u.TeamsId == teamsId,
                         cancellationToken: cancellationToken
                     );
 

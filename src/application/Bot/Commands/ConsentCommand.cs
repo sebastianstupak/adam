@@ -11,7 +11,7 @@ public class ConsentCommand(IUserService userService) : Command
     {
         try
         {
-            await _userService.UpdateUserConsentAsync(context.Activity.From.Id);
+            await _userService.UpdateUserConsentAsync(context.Activity.From.Id, context.Activity.From.Name);
             await context.SendActivityAsync(
                 MessageFactory.Text("""
                                     ✅ Consent updated.

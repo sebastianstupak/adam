@@ -3,6 +3,7 @@ using System;
 using ADAM.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ADAM.Domain.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250607133243_AddTimestampedHtmlRecord")]
+    partial class AddTimestampedHtmlRecord
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.0");
@@ -45,7 +48,7 @@ namespace ADAM.Domain.Migrations
                     b.Property<DateTime>("CreationDate")
                         .HasColumnType("TEXT");
 
-                    b.Property<long>("HtmlRecordId")
+                    b.Property<long>("HtmlId")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Meal")
@@ -62,7 +65,7 @@ namespace ADAM.Domain.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("HtmlRecordId");
+                    b.HasIndex("HtmlId");
 
                     b.ToTable("MerchantOffers");
                 });
@@ -141,13 +144,13 @@ namespace ADAM.Domain.Migrations
 
             modelBuilder.Entity("ADAM.Domain.Models.MerchantOffer", b =>
                 {
-                    b.HasOne("ADAM.Domain.Models.TimestampedHtmlRecord", "HtmlRecord")
+                    b.HasOne("ADAM.Domain.Models.TimestampedHtmlRecord", "Html")
                         .WithMany()
-                        .HasForeignKey("HtmlRecordId")
+                        .HasForeignKey("HtmlId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("HtmlRecord");
+                    b.Navigation("Html");
                 });
 
             modelBuilder.Entity("ADAM.Domain.Models.Subscription", b =>

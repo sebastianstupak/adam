@@ -66,12 +66,7 @@ public class CommandWorkflowTests(TestWebAppFactory factory) : IntegrationTestBa
         var user = new User
         {
             TeamsId = teamsId,
-            ConversationReference = new ConversationReference
-            {
-                UserId = 0,
-                ServiceUrl = "",
-                ConversationId = ""
-            },
+            Name = "FooBar",
             CreationDate = default,
             AcceptsDataStorage = true
         };
@@ -114,12 +109,7 @@ public class CommandWorkflowTests(TestWebAppFactory factory) : IntegrationTestBa
         var user = new User
         {
             TeamsId = teamsId,
-            ConversationReference = new ConversationReference
-            {
-                UserId = 0,
-                ServiceUrl = "",
-                ConversationId = ""
-            },
+            Name = "FooBar",
             CreationDate = default,
             AcceptsDataStorage = false
         };

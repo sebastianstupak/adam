@@ -1,3 +1,4 @@
+using ADAM.Application.Objects;
 using ADAM.Domain.Models;
 
 namespace ADAM.Application.Sites;
@@ -14,5 +15,5 @@ public interface IMerchantSite
     /// Retrieves the content of the site provided by <see cref="GetUrl"/> and processes it as per implementation.
     /// </summary>
     /// <returns>A list of </returns>
-    Task<IEnumerable<MerchantOffer>> GetOffersAsync(CancellationToken ct);
+    Task<SiteMerchantOffers> GetOffersAsync(CancellationToken ct);
 }

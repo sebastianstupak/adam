@@ -1,3 +1,4 @@
+using ADAM.Application.Objects;
 using ADAM.Domain.Models;
 using HtmlAgilityPack;
 using Microsoft.Extensions.Logging;
@@ -7,7 +8,7 @@ namespace ADAM.Application.Sites;
 public class MerchantSite(ILogger<MerchantSite> logger) : IMerchantSite
 {
     protected readonly ILogger Logger = logger;
-    
+
     public virtual string GetUrl() => string.Empty;
 
     /// <summary>
@@ -18,7 +19,7 @@ public class MerchantSite(ILogger<MerchantSite> logger) : IMerchantSite
     /// <returns>A list of processed merchant offers ready to be persisted</returns>
     protected virtual List<MerchantOffer> ExtractOffersFromPage(HtmlNode page) => [];
 
-    public virtual async Task<IEnumerable<MerchantOffer>> GetOffersAsync(CancellationToken ct)
+    public async Task<SiteMerchantOffers> GetOffersAsync(CancellationToken ct)
     {
         try
         {
@@ -27,15 +28,20 @@ public class MerchantSite(ILogger<MerchantSite> logger) : IMerchantSite
             if (htmlDoc.DocumentNode is null)
             {
                 Logger.LogWarning("Failed to get site from: {url}", GetUrl());
-                return [];
+                return new SiteMerchantOffers();
             }
 
-            return ExtractOffersFromPage(htmlDoc.DocumentNode);
+            return new SiteMerchantOffers
+            {
+                SiteHtml = htmlDoc.DocumentNode.InnerHtml,
+                Offers = ExtractOffersFromPage(htmlDoc.DocumentNode)
+            };
         }
         catch (Exception ex)
         {
             Logger.LogError("Encountered an error!\n{exceptionMessage}", ex.Message);
-            return [];
         }
+
+        return new SiteMerchantOffers();
     }
 }
