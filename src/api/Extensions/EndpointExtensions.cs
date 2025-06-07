@@ -1,6 +1,8 @@
 using ADAM.API.Endpoints.UserSubscriptions;
 using ADAM.Application.Jobs;
 using ADAM.Application.Objects;
+using Microsoft.Bot.Builder;
+using Microsoft.Bot.Builder.Integration.AspNet.Core;
 
 namespace ADAM.API.Extensions;
 
@@ -8,6 +10,7 @@ public static class EndpointExtensions
 {
     public static void RegisterAdamEndpoints(this IEndpointRouteBuilder endpoints)
     {
+        endpoints.RegisterBotEndpoints();
         endpoints.RegisterSubscriptionEndpoints();
         endpoints.RegisterUserEndpoints();
     }

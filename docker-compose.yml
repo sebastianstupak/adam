@@ -1,6 +1,5 @@
 services:
   adam-api:
-    image: adam-api
     container_name: adam-api
     build:
       context: .
@@ -14,5 +13,4 @@ services:
       - "8080:8080"
       - "8081:8081"
     volumes:
-      - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
-      - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
+      - ./home/visnovskya:/app/data
