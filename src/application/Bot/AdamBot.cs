@@ -29,7 +29,8 @@ public class AdamBot(IUserService userService, AppDbContext dbCtx, IEnumerable<I
             return;
 
         if (!await _userService.DidUserAcceptDataStorageAsync(teamsId)
-            && !StringMatchesFullOrSubString(parts.ElementAtOrDefault(1) ?? "", CommandConstants.Consent))
+            && !StringMatchesFullOrSubString(parts.ElementAtOrDefault(1) ?? "", CommandConstants.Consent)
+            && !StringMatchesFullOrSubString(parts.ElementAtOrDefault(1) ?? "", CommandConstants.Data))
         {
             await turnContext.SendActivityAsync(
                 MessageFactory.Text("""
@@ -99,6 +100,11 @@ public class AdamBot(IUserService userService, AppDbContext dbCtx, IEnumerable<I
         if (StringMatchesFullOrSubString(parts[1], CommandConstants.Consent))
         {
             await GetCommand<ConsentCommand>().HandleAsync(turnContext, parts, cancellationToken);
+        }
+
+        if (StringMatchesFullOrSubString(parts[1], CommandConstants.Data))
+        {
+            await GetCommand<DataCommand>().HandleAsync(turnContext, parts, cancellationToken);
         }
 
         if (StringMatchesFullOrSubString(parts[1], CommandConstants.Here))

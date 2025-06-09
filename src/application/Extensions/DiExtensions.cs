@@ -1,3 +1,4 @@
+using System.Reflection;
 using ADAM.Application.Bot;
 using ADAM.Application.Bot.Commands;
 using ADAM.Application.Jobs;
@@ -28,6 +29,7 @@ public static class DiExtensions
     public static IServiceCollection AddBotFramework(this IServiceCollection services)
     {
         services.AddScoped<ICommand, ConsentCommand>();
+        services.AddScoped<ICommand, DataCommand>();
         services.AddScoped<ICommand, CreateSubscriptionCommand>();
         services.AddScoped<ICommand, UpdateSubscriptionCommand>();
         services.AddScoped<ICommand, DeleteSubscriptionCommand>();
