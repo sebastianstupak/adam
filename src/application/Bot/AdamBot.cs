@@ -2,7 +2,6 @@ using ADAM.Application.Bot.Commands;
 using ADAM.Application.Services.Users;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Schema;
-using Microsoft.EntityFrameworkCore;
 
 namespace ADAM.Application.Bot;
 
@@ -17,10 +16,12 @@ public class AdamBot(IUserService userService, IEnumerable<ICommand> commands) :
         var messageContent = turnContext.Activity.Text;
         var teamsId = turnContext.Activity.From.Id ?? throw new Exception("Unable to get user ID from interaction!");
 
+        // Leave if it doesn't start with '@adam'
         if (!messageContent.StartsWith(CommandConstants.AdamBase, StringComparison.InvariantCultureIgnoreCase))
             return;
 
-        var parts = messageContent.Split(" ");
+        // Leave if it doesn't have 2 or more params (e.g. is only '@adam') 
+        var parts = messageContent.Trim().Split(" ");
         if (parts.Length < 2 ||
             !parts[0].Equals(CommandConstants.AdamBase, StringComparison.InvariantCultureIgnoreCase))
             return;
@@ -28,25 +29,22 @@ public class AdamBot(IUserService userService, IEnumerable<ICommand> commands) :
         var command = parts[1];
 
         // Check consent first (skip for consent/data commands)
-        if (!await _userService.DidUserAcceptDataStorageAsync(teamsId)
-            && !IsConsentOrDataCommand(command))
-        {
-            await SendConsentMessage(turnContext, cancellationToken);
+        if (await UserRequiresConsentAsync(turnContext, cancellationToken, teamsId, command))
             return;
-        }
 
         // Route to appropriate command handler
-        await RouteCommand(turnContext, parts, command, cancellationToken);
+        await RouteCommandAsync(turnContext, parts, command, cancellationToken);
     }
 
-    private static bool IsConsentOrDataCommand(string command)
+    private async Task<bool> UserRequiresConsentAsync(ITurnContext<IMessageActivity> turnContext,
+        CancellationToken cancellationToken,
+        string teamsId, string command)
     {
-        return StringMatchesFullOrSubString(command, CommandConstants.Consent)
-               || StringMatchesFullOrSubString(command, CommandConstants.Data);
-    }
+        if (await _userService.DidUserAcceptDataStorageAsync(teamsId)
+            || StringMatchesStrings(command, CommandConstants.Consent)
+            || StringMatchesStrings(command, CommandConstants.Data))
+            return false;
 
-    private async Task SendConsentMessage(ITurnContext turnContext, CancellationToken cancellationToken)
-    {
         await turnContext.SendActivityAsync(
             MessageFactory.Text("""
                                 Hello, this might be our first interaction!
@@ -56,40 +54,45 @@ public class AdamBot(IUserService userService, IEnumerable<ICommand> commands) :
                                 """),
             cancellationToken
         );
+
+        return true;
     }
 
-    private async Task RouteCommand(ITurnContext<IMessageActivity> ctx, string[] parts, string command,
+    private async Task RouteCommandAsync(ITurnContext<IMessageActivity> ctx, string[] parts, string command,
         CancellationToken ct)
     {
         switch (command.ToLowerInvariant())
         {
-            case var c when StringMatchesFullOrSubString(c, CommandConstants.Subscribe, [0, 3, 0, 1]):
-                await HandleSubscribeCommand(ctx, parts, ct);
+            case var c when StringMatchesStrings(c, CommandConstants.Subscribe, CommandConstants.Subscribe[..3],
+                CommandConstants.Subscribe[..1]):
+                await HandleSubscribeCommandAsync(ctx, parts, ct);
                 break;
 
-            case var c when StringMatchesFullOrSubString(c, CommandConstants.Unsubscribe, [0, 5, 0, 3]):
+            case var c when StringMatchesStrings(c, CommandConstants.Unsubscribe, CommandConstants.Unsubscribe[..5],
+                CommandConstants.Unsubscribe[..3]):
                 await GetCommand<DeleteSubscriptionCommand>().HandleAsync(ctx, parts, ct);
                 break;
 
-            case var c when StringMatchesFullOrSubString(c, CommandConstants.Consent):
+            case var c when StringMatchesStrings(c, CommandConstants.Consent):
                 await GetCommand<ConsentCommand>().HandleAsync(ctx, parts, ct);
                 break;
 
-            case var c when StringMatchesFullOrSubString(c, CommandConstants.Data):
+            case var c when StringMatchesStrings(c, CommandConstants.Data):
                 await GetCommand<DataCommand>().HandleAsync(ctx, parts, ct);
                 break;
 
-            case var c when StringMatchesFullOrSubString(c, CommandConstants.Here):
+            case var c when StringMatchesStrings(c, CommandConstants.Here):
                 await GetCommand<HereCommand>().HandleAsync(ctx, parts, ct);
                 break;
 
-            case var c when StringMatchesFullOrSubString(c, CommandConstants.Help):
-                await HandleHelpCommand(ctx, parts, ct);
+            case var c when StringMatchesStrings(c, CommandConstants.Help):
+                await HandleHelpCommandAsync(ctx, parts, ct);
                 break;
         }
     }
 
-    private async Task HandleSubscribeCommand(ITurnContext<IMessageActivity> ctx, string[] parts, CancellationToken ct)
+    private async Task HandleSubscribeCommandAsync(ITurnContext<IMessageActivity> ctx, string[] parts,
+        CancellationToken ct)
     {
         if (parts.Length < 3)
             return;
@@ -111,7 +114,7 @@ public class AdamBot(IUserService userService, IEnumerable<ICommand> commands) :
         }
     }
 
-    private async Task HandleHelpCommand(ITurnContext<IMessageActivity> ctx, string[] parts, CancellationToken ct)
+    private async Task HandleHelpCommandAsync(ITurnContext<IMessageActivity> ctx, string[] parts, CancellationToken ct)
     {
         if (!HelpCommand.IsCommandsCacheInitialized())
             HelpCommand.InitCommandsCache(_commands);
@@ -121,47 +124,9 @@ public class AdamBot(IUserService userService, IEnumerable<ICommand> commands) :
 
     #region Helpers
 
-    /// <summary>
-    /// Checks whether a string matches a target string, or any of its substrings declared as index pairs.
-    /// </summary>
-    /// <param name="testee">A string to test</param>
-    /// <param name="target">The target to match against</param>
-    /// <param name="substringLimits">Optional array of integers,
-    ///              where every two entries are considered the beginning and end indexes of the target.</param>
-    /// <returns>TRUE, if matches</returns>
-    /// <exception cref="ArgumentException">In case the int[] of pairs contains an odd amount of values.</exception>
-    private static bool StringMatchesFullOrSubString(string testee, string target, int[]? substringLimits = null)
+    private static bool StringMatchesStrings(string testee, params string[] targets)
     {
-        var match = false;
-
-        if (substringLimits is null)
-            return testee.Equals(target, StringComparison.InvariantCultureIgnoreCase);
-
-        if (substringLimits.Length % 2 != 0)
-            throw new ArgumentException($"{nameof(substringLimits)} must have an even count of values.");
-
-        var substringLimitPairs = new List<(int, int)>();
-        for (var i = 0; i < substringLimits.Length; i += 2) // Create pairs
-        {
-            if (i + 1 < substringLimits.Length)
-                substringLimitPairs.Add((substringLimits[i], substringLimits[i + 1]));
-        }
-
-        var matchesFully = testee.Equals(target, StringComparison.InvariantCultureIgnoreCase);
-
-        foreach (var pair in substringLimitPairs)
-        {
-            var matchesSubstringPair = testee.Equals(target.Substring(pair.Item1, pair.Item2),
-                StringComparison.InvariantCultureIgnoreCase);
-
-            if (!matchesFully && !matchesSubstringPair)
-                continue;
-
-            match = true;
-            break;
-        }
-
-        return match;
+        return targets.Any(target => target.Equals(testee, StringComparison.InvariantCultureIgnoreCase));
     }
 
     private ICommand GetCommand<TCommand>() where TCommand : ICommand
