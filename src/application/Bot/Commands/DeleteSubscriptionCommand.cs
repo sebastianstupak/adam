@@ -27,4 +27,8 @@ public class DeleteSubscriptionCommand(IUserService userService) : Command
             );
         }
     }
+
+    public override string GetCommandName() => "Delete Subscription";
+    public override string GetCommandUsageExample() => "@adam uns (id)";
+    public override string GetCommandDescription() => "Used to unsubscribe from a food or company alert.";
 }

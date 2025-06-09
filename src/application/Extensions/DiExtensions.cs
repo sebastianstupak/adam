@@ -33,6 +33,7 @@ public static class DiExtensions
         services.AddScoped<ICommand, DeleteSubscriptionCommand>();
         services.AddScoped<ICommand, ListSubscriptionsCommand>();
         services.AddScoped<ICommand, HereCommand>();
+        services.AddScoped<ICommand, HelpCommand>();
 
         services.AddSingleton<BotFrameworkAuthentication, ConfigurationBotFrameworkAuthentication>();
         services.AddSingleton<IBotFrameworkHttpAdapter, AdapterWithErrorHandler>();
@@ -40,10 +41,10 @@ public static class DiExtensions
         services.AddScoped<MessageSendingService>();
 
         services.AddTransient<IBot, AdamBot>();
-        
+
         return services;
     }
-    
+
     /// <summary>
     /// Provides the <see cref="IServiceCollection"/> with the implementations of sites ADAM is capable of scalping.
     /// </summary>

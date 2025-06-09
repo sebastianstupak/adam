@@ -35,4 +35,8 @@ public class UpdateSubscriptionCommand(IUserService userService) : Command
             );
         }
     }
+
+    public override string GetCommandName() => "Update Subscription";
+    public override string GetCommandUsageExample() => "@adam s update (id) (new value)";
+    public override string GetCommandDescription() => "Used to update the value of a subscription.";
 }

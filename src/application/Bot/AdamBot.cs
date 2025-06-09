@@ -105,6 +105,14 @@ public class AdamBot(IUserService userService, AppDbContext dbCtx, IEnumerable<I
         {
             await GetCommand<HereCommand>().HandleAsync(turnContext, parts, cancellationToken);
         }
+
+        if (StringMatchesFullOrSubString(parts[1], CommandConstants.Help))
+        {
+            if (!HelpCommand.IsCommandsCacheInitialized())
+                HelpCommand.InitCommandsCache(_commands);
+
+            await GetCommand<HelpCommand>().HandleAsync(turnContext, parts, cancellationToken);
+        }
     }
 
     #region Helpers

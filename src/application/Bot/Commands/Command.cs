@@ -18,6 +18,10 @@ public abstract class Command : ICommand
         }
     }
 
+    public abstract string GetCommandName();
+    public abstract string GetCommandUsageExample();
+    public abstract string GetCommandDescription();
+
     protected abstract Task HandleCommandAsync(
         ITurnContext context,
         string[] cmdParts,

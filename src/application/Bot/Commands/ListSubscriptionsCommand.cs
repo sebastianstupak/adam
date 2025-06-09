@@ -34,4 +34,8 @@ public class ListSubscriptionsCommand(IUserService userService) : Command
 
         await context.SendActivityAsync(output, ct);
     }
+
+    public override string GetCommandName() => "List Subscriptions";
+    public override string GetCommandUsageExample() => "@adam list";
+    public override string GetCommandDescription() => "Lists all your subscriptions.";
 }
