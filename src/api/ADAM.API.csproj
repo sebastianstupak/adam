@@ -21,14 +21,13 @@
 	  <PrivateAssets>all</PrivateAssets>
 	  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 	</PackageReference>
-	<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0" />
 
 	<!-- Health Checks -->
-	<PackageReference Include="AspNetCore.HealthChecks.NpgSql" Version="7.1.0" />
+    <PackageReference Include="AspNetCore.HealthChecks.Sqlite" Version="9.0.0" />
 
 	<!-- Hangfire -->
 	<PackageReference Include="Hangfire.AspNetCore" Version="1.8.6" />
-	<PackageReference Include="Hangfire.PostgreSql" Version="1.20.4" />
+    <PackageReference Include="Hangfire.SQLite" Version="1.4.2" />
   </ItemGroup>
 
   <ItemGroup>

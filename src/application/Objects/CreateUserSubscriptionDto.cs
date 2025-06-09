@@ -5,8 +5,10 @@ namespace ADAM.Application.Objects;
 
 public class CreateUserSubscriptionDto
 {
-    public Guid UserGuid { get; set; }
+    public string TeamsId { get; set; }
 
+    public string Name { get; set; }
+    
     public SubscriptionType Type { get; set; }
 
     [MaxLength(255)]

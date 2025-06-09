@@ -4,14 +4,15 @@ namespace ADAM.Domain.Repositories.Users;
 
 public interface IUserRepository
 {
-    Task<User?> GetUserAsync(Guid guid);
-    
+    Task<User?> GetUserAsync(string teamsId);
+
     /// <summary>
-    /// Returns all users whose even a single subscription matches at least a single string in <see cref="names"/>.
+    /// Returns all users whose even a single subscription matches at least a single string in <see cref="valuesToMatchAgainst"/>.
     /// </summary>
-    /// <param name="names">A joined list of merchant names and offers</param>
+    /// <param name="valuesToMatchAgainst">A joined list of merchant names and offers</param>
     /// <returns>A collection of <see cref="User"/>s matching the predicate.</returns>
-    Task<IEnumerable<User>> GetUsersWithMatchingSubscriptionsAsync(IEnumerable<string> names);
+    Task<IEnumerable<(User user, IEnumerable<Subscription> subscriptions)>> GetUsersWithMatchingSubscriptionsAsync(
+        IEnumerable<string> valuesToMatchAgainst);
     
-    Task CreateUserAsync(Guid guid);
+    Task CreateUserAsync(string teamsId, string name);
 }

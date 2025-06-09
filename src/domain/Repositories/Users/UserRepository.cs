@@ -5,39 +5,51 @@ namespace ADAM.Domain.Repositories.Users;
 
 public class UserRepository(AppDbContext dbCtx) : IUserRepository
 {
-    public Task<User?> GetUserAsync(Guid guid)
+    private readonly AppDbContext _dbCtx = dbCtx;
+
+    public Task<User?> GetUserAsync(string teamsId)
     {
-        return dbCtx.Users.FirstOrDefaultAsync(u => u.Guid == guid);
+        return _dbCtx.Users.FirstOrDefaultAsync(u => u.TeamsId == teamsId);
     }
 
-    // TODO: Write tests
-    public async Task<IEnumerable<User>> GetUsersWithMatchingSubscriptionsAsync(IEnumerable<string> names)
+    public async Task<IEnumerable<(User user, IEnumerable<Subscription> subscriptions)>>
+        GetUsersWithMatchingSubscriptionsAsync(IEnumerable<string> valuesToMatchAgainst)
     {
-        {
-            var foodNamesList = names.ToList();
+        var foodNamesList = valuesToMatchAgainst.ToList();
 
-            if (foodNamesList.Count == 0)
-                return [];
+        if (foodNamesList.Count == 0)
+            return [];
 
-            return await dbCtx.Users
-                .Where(u => u.Subscriptions.Any(
-                        s => foodNamesList.Any(
-                            foodName => EF.Functions.ILike(foodName, "%" + s.Value + "%")
-                        )
-                    )
+        var query = _dbCtx.Users
+            .Where(u => u.Subscriptions.Any(s =>
+                foodNamesList.Any(foodName => EF.Functions.Like(foodName, "%" + s.Value + "%")
                 )
-                .ToListAsync();
-        }
+            ))
+            .Select(u => new
+            {
+                User = u,
+                // Select matching subscription values
+                MatchingSubscriptions = u.Subscriptions
+                    .Where(s => foodNamesList.Any(foodName => EF.Functions.Like(foodName, "%" + s.Value + "%")
+                    ))
+            });
+
+        var results = await query.ToListAsync();
+        return results.Select(x => (x.User, x.MatchingSubscriptions));
     }
 
-    public async Task CreateUserAsync(Guid guid)
+    public async Task CreateUserAsync(string teamsId, string name)
     {
-        dbCtx.Users.Add(new User
-        {
-            Guid = guid,
-            CreationDate = DateTime.UtcNow
-        });
+        _dbCtx.Users.Add(
+            new User
+            {
+                TeamsId = teamsId,
+                Name = name,
+                CreationDate = DateTime.UtcNow,
+                AcceptsDataStorage = false
+            }
+        );
 
-        await dbCtx.SaveChangesAsync();
+        await _dbCtx.SaveChangesAsync();
     }
 }

@@ -11,9 +11,13 @@ public class AppDbContext : DbContext
 
     public DbSet<MerchantOffer> MerchantOffers { get; set; }
 
+    public DbSet<TimestampedHtmlRecord> TimestampedHtmlRecords { get; set; }
+
     public DbSet<User> Users { get; set; }
 
     public DbSet<Subscription> Subscriptions { get; set; }
+
+    public DbSet<ConversationReference> ConversationReferences { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

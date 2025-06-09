@@ -12,13 +12,12 @@ public class AuparkSite(ILogger<AuparkSite> logger) : MerchantSite(logger)
 
     protected override List<MerchantOffer> ExtractOffersFromPage(HtmlNode page)
     {
-        var utcNow = DateTime.UtcNow;
         var offers = new List<MerchantOffer>();
 
         // Get all sections
         var sectionNodes = page.SelectNodes("//div[contains(@id, '-section')]");
 
-        if (sectionNodes == null)
+        if (sectionNodes is null)
         {
             Logger.LogWarning("No sections found with IDs ending in '-section'");
             return [];
@@ -36,58 +35,61 @@ public class AuparkSite(ILogger<AuparkSite> logger) : MerchantSite(logger)
 
             // Find all menu items in this section
             var menuItems = node.SelectNodes(".//div[contains(@class, 'flex gap-8 items-start border-b')]");
-
             if (menuItems is null)
                 continue;
 
-            foreach (var menuItem in menuItems)
-            {
-                var mealNode = menuItem.SelectSingleNode(".//div[contains(@class, 'w-full text-black')]");
-                var priceNode =
-                    menuItem.SelectSingleNode(".//div[contains(@class, 'w-[120px] text-right font-semibold')]");
-
-                if (mealNode is null || priceNode is null)
-                    continue;
-
-                var meal = mealNode.InnerText.Trim();
-                var priceText = priceNode.InnerText.Trim().Replace("€", "").Trim();
-
-                // Handle price format irregularities
-                decimal price = 0;
-                if (!string.IsNullOrEmpty(priceText))
-                {
-                    // Replace comma with period for decimal parsing if needed
-                    priceText = priceText.Replace(',', '.');
-                    if (decimal.TryParse(priceText,
-                            System.Globalization.NumberStyles.Any,
-                            System.Globalization.CultureInfo.InvariantCulture,
-                            out var parsedPrice))
-                    {
-                        price = parsedPrice;
-                    }
-                }
-                
-                var offer = new MerchantOffer
-                {
-                    Name = merchantName,
-                    Meal = meal,
-                    Price = price,
-                    Html = page.InnerHtml,
-                    CreationDate = utcNow
-                };
-
-                offers.Add(offer);
-            }
+            // Create and collect merchant offers
+            offers.AddRange(
+                menuItems.Select(menuItem => CreateMerchantOffer(menuItem, merchantName)
+                ).OfType<MerchantOffer>());
         }
 
         return offers;
+    }
+
+    private static MerchantOffer? CreateMerchantOffer(HtmlNode menuItem, string merchantName)
+    {
+        var utcNow = DateTime.UtcNow;
+
+        var mealNode = menuItem.SelectSingleNode(".//div[contains(@class, 'w-full text-black')]");
+        var priceNode =
+            menuItem.SelectSingleNode(".//div[contains(@class, 'w-[120px] text-right font-semibold')]");
+
+        if (mealNode is null || priceNode is null)
+            return null;
+
+        var meal = mealNode.InnerText.Trim();
+        var priceText = priceNode.InnerText.Trim().Replace("€", "").Trim();
+
+        // Handle price format irregularities
+        decimal price = 0;
+        if (!string.IsNullOrEmpty(priceText))
+        {
+            // Replace comma with period for decimal parsing if needed
+            priceText = priceText.Replace(',', '.');
+            if (decimal.TryParse(priceText,
+                    System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out var parsedPrice))
+            {
+                price = parsedPrice;
+            }
+        }
+
+        return new MerchantOffer
+        {
+            MerchantName = merchantName,
+            Meal = meal,
+            Price = price,
+            CreationDate = utcNow
+        };
     }
 
     /// <summary>
     /// Formats Aupark's section names to friendlier names.
     /// </summary>
     /// <example>tahiti-section --> Tahiti</example>
-    private string FormatSectionName(string sectionId)
+    private static string FormatSectionName(string sectionId)
     {
         var words = sectionId.Split('-');
         for (var i = 0; i < words.Length; i++)

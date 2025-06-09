@@ -1,10 +1,10 @@
 using ADAM.Domain;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Npgsql;
 using Testcontainers.PostgreSql;
 using TUnit.Core.Interfaces;
 
@@ -19,9 +19,7 @@ public sealed class TestWebAppFactory : WebApplicationFactory<Program>, IAsyncIn
     public async Task InitializeAsync()
     {
         await _container.StartAsync();
-        
-        CreateDefaultClient();
-        
+
         CreateDb();
     }
 
@@ -35,17 +33,13 @@ public sealed class TestWebAppFactory : WebApplicationFactory<Program>, IAsyncIn
     {
         builder.UseEnvironment("Test");
 
-        var connectionString = new NpgsqlConnectionStringBuilder(_container.GetConnectionString())
-        {
-            PersistSecurityInfo = true
-        }.ConnectionString;
+        var connectionString = new SqliteConnectionStringBuilder(_container.GetConnectionString()).ConnectionString;
 
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<AppDbContext>();
 
-            services.AddDbContext<AppDbContext>(
-                opts => opts.UseNpgsql(connectionString)
+            services.AddDbContext<AppDbContext>(opts => opts.UseSqlite(connectionString)
             );
         });
     }

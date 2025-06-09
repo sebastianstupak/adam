@@ -1,8 +1,11 @@
+using System.Collections;
+using System.Diagnostics;
 using ADAM.Application.Objects;
 using ADAM.Domain;
 using ADAM.Domain.Models;
 using ADAM.Domain.Repositories.Subscriptions;
 using ADAM.Domain.Repositories.Users;
+using Microsoft.EntityFrameworkCore;
 
 namespace ADAM.Application.Services.Users;
 
@@ -12,14 +15,23 @@ public class UserService(
     AppDbContext dbCtx
 ) : IUserService
 {
-    public async Task<IEnumerable<GetUserSubscriptionDto>> GetUserSubscriptionsAsync(Guid userGuid)
+    private readonly IUserRepository _userRepository = userRepository;
+    private readonly ISubscriptionRepository _subscriptionRepository = subscriptionRepository;
+    private readonly AppDbContext _dbCtx = dbCtx;
+
+    public async Task CreateUserAsync(string teamsId, string name)
     {
-        var user = await userRepository.GetUserAsync(userGuid);
+        await _userRepository.CreateUserAsync(teamsId, name);
+    }
 
-        if (user == null)
-            await userRepository.CreateUserAsync(userGuid);
+    public async Task<IEnumerable<GetUserSubscriptionDto>> GetUserSubscriptionsAsync(string teamsId)
+    {
+        var user = await _userRepository.GetUserAsync(teamsId);
 
-        var subscriptions = await subscriptionRepository.GetSubscriptionsAsync(userGuid);
+        if (user is null)
+            throw new UserNotFoundException();
+
+        var subscriptions = await _subscriptionRepository.GetSubscriptionsAsync(teamsId);
 
         return subscriptions.Select(s => new GetUserSubscriptionDto
         {
@@ -33,12 +45,12 @@ public class UserService(
     {
         ValidateSubscriptionValueLength(dto.Value);
 
-        var user = await userRepository.GetUserAsync(dto.UserGuid);
+        var user = await _userRepository.GetUserAsync(dto.TeamsId);
 
-        if (user == null)
+        if (user is null)
         {
-            await userRepository.CreateUserAsync(dto.UserGuid);
-            user = await userRepository.GetUserAsync(dto.UserGuid);
+            await CreateUserAsync(dto.TeamsId, dto.Name);
+            user = await _userRepository.GetUserAsync(dto.TeamsId);
         }
 
         user!.Subscriptions.Add(new Subscription
@@ -47,34 +59,71 @@ public class UserService(
             Value = dto.Value,
         });
 
-        await dbCtx.SaveChangesAsync();
+        await _dbCtx.SaveChangesAsync();
     }
 
-    public async Task UpdateUserSubscriptionAsync(int id, UpdateUserSubscriptionDto dto)
+    public async Task UpdateUserSubscriptionAsync(int id, UpdateUserSubscriptionDto dto, string teamsId)
     {
         ValidateSubscriptionValueLength(dto.NewValue);
 
-        var subscription = await subscriptionRepository.GetSubscriptionAsync(id);
+        var subscription = await _subscriptionRepository.GetSubscriptionAsync(id)
+                           ?? throw new SubscriptionNotFoundException();
 
-        if (subscription is null)
-            throw new SubscriptionNotFoundException();
+        if (!subscription.User.TeamsId.Equals(teamsId, StringComparison.InvariantCultureIgnoreCase))
+            throw new UnauthorizedAccessException("You can't delete this subscription.");
 
         subscription.Value = dto.NewValue;
 
-        await dbCtx.SaveChangesAsync();
+        await _dbCtx.SaveChangesAsync();
     }
 
-    public async Task DeleteUserSubscriptionAsync(int id)
+    public async Task DeleteUserSubscriptionAsync(long id, string teamsId)
     {
-        var subscription = await subscriptionRepository.GetSubscriptionAsync(id);
+        var subscription = await _subscriptionRepository.GetSubscriptionAsync(id)
+                           ?? throw new SubscriptionNotFoundException();
 
-        if (subscription is null)
-            throw new SubscriptionNotFoundException();
+        if (!subscription.User.TeamsId.Equals(teamsId, StringComparison.InvariantCultureIgnoreCase))
+            throw new UnauthorizedAccessException("You can't delete this subscription.");
 
-        await subscriptionRepository.DeleteAsync(id);
+        await _subscriptionRepository.DeleteAsync(id);
     }
 
-    private void ValidateSubscriptionValueLength(string value)
+    public async Task<bool> DidUserAcceptDataStorageAsync(string teamsId)
+    {
+        var user = await _dbCtx.Users.FirstOrDefaultAsync(u => u.TeamsId == teamsId
+        );
+
+        return user is not null && user.AcceptsDataStorage;
+    }
+
+    public async Task UpdateUserConsentAsync(string teamsId, string name)
+    {
+        var user = await _userRepository.GetUserAsync(teamsId);
+
+        if (user is null)
+            await CreateUserAsync(teamsId, name);
+
+        user = await _userRepository.GetUserAsync(teamsId);
+
+        user!.AcceptsDataStorage = true;
+        await _dbCtx.SaveChangesAsync();
+    }
+
+    public async Task<IEnumerable<UserSubscriptions>> GetUsersWithMatchingSubscriptionsAsync(
+        IEnumerable<string> valuesToMatchAgainst)
+    {
+        return (
+            await _userRepository.GetUsersWithMatchingSubscriptionsAsync(valuesToMatchAgainst)
+        ).Select(tuple =>
+            new UserSubscriptions
+            {
+                User = tuple.user,
+                Subscriptions = tuple.subscriptions
+            }
+        );
+    }
+
+    private static void ValidateSubscriptionValueLength(string value)
     {
         if (string.IsNullOrEmpty(value) || string.IsNullOrWhiteSpace(value) || value.Length > 255)
             throw new ArgumentOutOfRangeException(value);
@@ -82,3 +131,5 @@ public class UserService(
 }
 
 public class SubscriptionNotFoundException() : Exception("Subscription not found");
+
+public class UserNotFoundException() : Exception("User not found");

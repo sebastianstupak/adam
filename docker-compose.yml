@@ -9,27 +9,10 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8080
       - ASPNETCORE_HTTPS_PORTS=8081
-      - ConnectionStrings__DefaultConnection=Host=adam-db;Database=adamdb;Username=postgres;Password=yourpassword
+      - ConnectionStrings__DefaultConnection=Data Source=adamdb.db;Cache=Shared
     ports:
       - "8080:8080"
       - "8081:8081"
     volumes:
       - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
       - ${APPDATA}/ASP.NET/Https:/home/app/.aspnet/https:ro
-    depends_on:
-      - adam-db
-
-  adam-db:
-    image: postgres:latest
-    container_name: adam-db
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=yourpassword
-      - POSTGRES_DB=adamdb
-    ports:
-      - "5432:5432"
-    volumes:
-      - adam-data:/var/lib/postgresql/data
-
-volumes:
-  adam-data:

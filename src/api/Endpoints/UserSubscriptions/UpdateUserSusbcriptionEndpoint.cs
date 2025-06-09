@@ -2,7 +2,7 @@ using ADAM.Application.Objects;
 using ADAM.Application.Services.Users;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ADAM.API.Endpoints;
+namespace ADAM.API.Endpoints.UserSubscriptions;
 
 public class UpdateUserSusbcriptionEndpoint
 {
@@ -10,7 +10,7 @@ public class UpdateUserSusbcriptionEndpoint
     {
         try
         {
-            await userService.UpdateUserSubscriptionAsync(id, dto);
+            await userService.UpdateUserSubscriptionAsync(id, dto, null); // TODO: Decide
             return Results.Created();
         }
         catch (SubscriptionNotFoundException)

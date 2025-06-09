@@ -1,44 +1,52 @@
 using System.Text.Json;
 using ADAM.API;
 using ADAM.API.Extensions;
-using ADAM.API.Jobs;
+using ADAM.Application.Extensions;
+using ADAM.Application.Jobs;
 using ADAM.Domain;
 using Hangfire;
 using Hangfire.Dashboard;
-using Hangfire.PostgreSql;
+using Hangfire.SQLite;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddAuthorization();
+
+builder.Services.AddBotFramework();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddLogging();
+
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
                        throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 if (!builder.Environment.IsEnvironment("Test"))
 {
-    builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseNpgsql(connectionString));
+    builder.Services.AddDbContext<AppDbContext>(opts => opts.UseSqlite(connectionString));
+
+    builder.Services.AddHealthChecks()
+        .AddSqlite(connectionString, name: "database")
+        .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy());
+
+    builder.Services.AddHangfire(config => config
+        .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
+        .UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UseSQLiteStorage(connectionString));
+
+    builder.Services.AddHangfireServer();
 }
-
-builder.Services.AddHealthChecks()
-    .AddNpgSql(connectionString, name: "database")
-    .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy());
-
-builder.Services.AddHangfire(config => config
-    .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
-    .UseSimpleAssemblyNameTypeSerializer()
-    .UseRecommendedSerializerSettings()
-    .UsePostgreSqlStorage(options => options.UseNpgsqlConnection(connectionString)));
-builder.Services.AddHangfireServer();
 
 builder.Services.AddHttpClient();
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSites().AddAdamServices();
+builder.Services
+    .AddSites()
+    .AddAdamServices();
 
 var app = builder.Build();
 
@@ -49,41 +57,64 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+app.Use(async (context, next) =>
+{
+    if (context.Request.IsHttps && context.Request.Path.StartsWithSegments("/api/messages"))
+    {
+        var url = "http://" + context.Request.Host + context.Request.Path +
+                  context.Request.QueryString;
+
+        context.Response.Redirect(url);
+
+        return;
+    }
+
+    await next();
+});
 
 app.RegisterAdamEndpoints();
 
-app.MapHealthChecks("/health", new HealthCheckOptions
+if (!app.Environment.IsEnvironment("test"))
 {
-    ResponseWriter = async (context, report) =>
+    app.MapHealthChecks("/health", new HealthCheckOptions
     {
-        context.Response.ContentType = "application/json";
-
-        var response = new
+        ResponseWriter = async (context, report) =>
         {
-            Status = report.Status.ToString(),
-            HealthChecks = report.Entries.Select(e => new
+            context.Response.ContentType = "application/json";
+
+            var response = new
             {
-                Component = e.Key,
-                Status = e.Value.Status.ToString(),
-                Description = e.Value.Description
-            }),
-            TotalDuration = report.TotalDuration
-        };
+                Status = report.Status.ToString(),
+                HealthChecks = report.Entries.Select(e => new
+                {
+                    Component = e.Key,
+                    Status = e.Value.Status.ToString(),
+                    Description = e.Value.Description
+                }),
+                TotalDuration = report.TotalDuration
+            };
 
-        await context.Response.WriteAsync(JsonSerializer.Serialize(response));
-    }
-});
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+        }
+    });
 
-app.UseHangfireDashboard("/hangfire", new DashboardOptions
+    app.UseHangfireDashboard("/hangfire", new DashboardOptions
+    {
+        Authorization = [new AllowAllConnectionsFilter()]
+    });
+
+    RecurringJob.AddOrUpdate<ScrapeAndNotifyJob>(
+        "daily-scrape-and-notify-job",
+        scraper => scraper.ExecuteAsync(),
+        Cron.Daily(9, 0));
+}
+
+using (var scope = app.Services.CreateScope())
 {
-    Authorization = [new AllowAllConnectionsFilter()]
-});
-
-RecurringJob.AddOrUpdate<ScrapeAndNotifyJob>(
-    "daily-scrape-and-notify-job",
-    scraper => scraper.ExecuteAsync(),
-    Cron.Daily(9, 0));
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await context.Database.EnsureCreatedAsync();
+    await context.Database.MigrateAsync();
+}
 
 app.Run();
 
@@ -95,4 +126,5 @@ namespace ADAM.API
     }
 }
 
+// For tests
 public partial class Program;
