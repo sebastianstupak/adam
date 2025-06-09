@@ -14,11 +14,12 @@ public interface IUserService
 
     Task UpdateUserSubscriptionAsync(int id, UpdateUserSubscriptionDto dto, string teamsId);
 
-    Task DeleteUserSubscriptionAsync(int id);
+    Task DeleteUserSubscriptionAsync(long id, string teamsId);
 
     Task<bool> DidUserAcceptDataStorageAsync(string teamsId);
 
     Task UpdateUserConsentAsync(string teamsId, string name);
 
-    Task<IEnumerable<UserSubscriptions>> GetUsersWithMatchingSubscriptionsAsync(IEnumerable<string> valuesToMatchAgainst);
+    Task<IEnumerable<UserSubscriptions>> GetUsersWithMatchingSubscriptionsAsync(
+        IEnumerable<string> valuesToMatchAgainst);
 }

@@ -13,8 +13,8 @@ public class DataCommand : Command
                                 We store the following data regarding you, the end user:
                                 - Teams ID
                                 - Teams Name
-                                - The date of your user entry creation (via `@adam consent`)
-                                - Whether you've consented to data storage (via `@adam consent`)
+                                - The date of your user entry creation (typically via `@adam consent`)
+                                - Whether you've consented to data storage (typically via `@adam consent`)
                                 - Your ADAM subscriptions
 
                                 If you have any more questions, please contact the devs of ADAM.

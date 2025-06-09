@@ -1,124 +1,122 @@
 using ADAM.Application.Bot.Commands;
 using ADAM.Application.Services.Users;
-using ADAM.Domain;
 using Microsoft.Bot.Builder;
 using Microsoft.Bot.Schema;
 using Microsoft.EntityFrameworkCore;
 
 namespace ADAM.Application.Bot;
 
-public class AdamBot(IUserService userService, AppDbContext dbCtx, IEnumerable<ICommand> commands) : ActivityHandler
+public class AdamBot(IUserService userService, IEnumerable<ICommand> commands) : ActivityHandler
 {
     private readonly IUserService _userService = userService;
-    private readonly AppDbContext _dbCtx = dbCtx;
     private readonly IEnumerable<ICommand> _commands = commands;
 
     protected override async Task OnMessageActivityAsync(ITurnContext<IMessageActivity> turnContext,
         CancellationToken cancellationToken)
     {
         var messageContent = turnContext.Activity.Text;
-
-        var teamsId = turnContext.Activity.From.Id
-                      ?? throw new Exception("Unable to get user ID from interaction!");
+        var teamsId = turnContext.Activity.From.Id ?? throw new Exception("Unable to get user ID from interaction!");
 
         if (!messageContent.StartsWith(CommandConstants.AdamBase, StringComparison.InvariantCultureIgnoreCase))
             return;
 
         var parts = messageContent.Split(" ");
-        if (!parts[0].Equals(CommandConstants.AdamBase, StringComparison.InvariantCultureIgnoreCase))
+        if (parts.Length < 2 ||
+            !parts[0].Equals(CommandConstants.AdamBase, StringComparison.InvariantCultureIgnoreCase))
             return;
 
+        var command = parts[1];
+
+        // Check consent first (skip for consent/data commands)
         if (!await _userService.DidUserAcceptDataStorageAsync(teamsId)
-            && !StringMatchesFullOrSubString(parts.ElementAtOrDefault(1) ?? "", CommandConstants.Consent)
-            && !StringMatchesFullOrSubString(parts.ElementAtOrDefault(1) ?? "", CommandConstants.Data))
+            && !IsConsentOrDataCommand(command))
         {
-            await turnContext.SendActivityAsync(
-                MessageFactory.Text("""
-                                    Hello, this might be our first interaction!
-
-                                    To use my services, please consent to your data being stored by typing `@adam consent`.
-                                    To learn what data we store about you, type `@adam data`.
-                                    """),
-                cancellationToken
-            );
-
+            await SendConsentMessage(turnContext, cancellationToken);
             return;
         }
 
-        if (parts.Length < 2)
+        // Route to appropriate command handler
+        await RouteCommand(turnContext, parts, command, cancellationToken);
+    }
+
+    private static bool IsConsentOrDataCommand(string command)
+    {
+        return StringMatchesFullOrSubString(command, CommandConstants.Consent)
+               || StringMatchesFullOrSubString(command, CommandConstants.Data);
+    }
+
+    private async Task SendConsentMessage(ITurnContext turnContext, CancellationToken cancellationToken)
+    {
+        await turnContext.SendActivityAsync(
+            MessageFactory.Text("""
+                                Hello, this might be our first interaction!
+
+                                To use my services, please consent to your data being stored by typing `@adam consent`.
+                                To learn what data we store about you, type `@adam data`.
+                                """),
+            cancellationToken
+        );
+    }
+
+    private async Task RouteCommand(ITurnContext<IMessageActivity> ctx, string[] parts, string command,
+        CancellationToken ct)
+    {
+        switch (command.ToLowerInvariant())
+        {
+            case var c when StringMatchesFullOrSubString(c, CommandConstants.Subscribe, [0, 3, 0, 1]):
+                await HandleSubscribeCommand(ctx, parts, ct);
+                break;
+
+            case var c when StringMatchesFullOrSubString(c, CommandConstants.Unsubscribe, [0, 5, 0, 3]):
+                await GetCommand<DeleteSubscriptionCommand>().HandleAsync(ctx, parts, ct);
+                break;
+
+            case var c when StringMatchesFullOrSubString(c, CommandConstants.Consent):
+                await GetCommand<ConsentCommand>().HandleAsync(ctx, parts, ct);
+                break;
+
+            case var c when StringMatchesFullOrSubString(c, CommandConstants.Data):
+                await GetCommand<DataCommand>().HandleAsync(ctx, parts, ct);
+                break;
+
+            case var c when StringMatchesFullOrSubString(c, CommandConstants.Here):
+                await GetCommand<HereCommand>().HandleAsync(ctx, parts, ct);
+                break;
+
+            case var c when StringMatchesFullOrSubString(c, CommandConstants.Help):
+                await HandleHelpCommand(ctx, parts, ct);
+                break;
+        }
+    }
+
+    private async Task HandleSubscribeCommand(ITurnContext<IMessageActivity> ctx, string[] parts, CancellationToken ct)
+    {
+        if (parts.Length < 3)
             return;
 
-        if (StringMatchesFullOrSubString(parts[1], CommandConstants.Subscribe, [0, 3, 0, 1]))
+        switch (parts[2])
         {
-            switch (parts[2])
-            {
-                case CommandConstants.List:
-                {
-                    await GetCommand<ListSubscriptionsCommand>().HandleAsync(turnContext, parts, cancellationToken);
-                    break;
-                }
+            case CommandConstants.List:
+                await GetCommand<ListSubscriptionsCommand>().HandleAsync(ctx, parts, ct);
+                break;
 
-                case CommandConstants.Company:
-                case CommandConstants.Food:
-                {
-                    var user = await _dbCtx.Users.FirstOrDefaultAsync(
-                        u => u.TeamsId == teamsId,
-                        cancellationToken: cancellationToken
-                    );
+            case CommandConstants.Company:
+            case CommandConstants.Food:
+                await GetCommand<CreateSubscriptionCommand>().HandleAsync(ctx, parts, ct);
+                break;
 
-                    if (user is null)
-                    {
-                        await turnContext.SendActivityAsync(
-                            MessageFactory.Text("""
-                                                ❌ No channel set!
-
-                                                Let me know where to alert you using `@adam here`.
-                                                """),
-                            cancellationToken
-                        );
-
-                        return;
-                    }
-
-                    await GetCommand<CreateSubscriptionCommand>().HandleAsync(turnContext, parts, cancellationToken);
-                    break;
-                }
-
-                case CommandConstants.Update:
-                {
-                    await GetCommand<UpdateSubscriptionCommand>().HandleAsync(turnContext, parts, cancellationToken);
-                    break;
-                }
-            }
+            case CommandConstants.Update:
+                await GetCommand<UpdateSubscriptionCommand>().HandleAsync(ctx, parts, ct);
+                break;
         }
+    }
 
-        if (StringMatchesFullOrSubString(parts[1], CommandConstants.Unsubscribe, [0, 5, 0, 3]))
-        {
-            await GetCommand<DeleteSubscriptionCommand>().HandleAsync(turnContext, parts, cancellationToken);
-        }
+    private async Task HandleHelpCommand(ITurnContext<IMessageActivity> ctx, string[] parts, CancellationToken ct)
+    {
+        if (!HelpCommand.IsCommandsCacheInitialized())
+            HelpCommand.InitCommandsCache(_commands);
 
-        if (StringMatchesFullOrSubString(parts[1], CommandConstants.Consent))
-        {
-            await GetCommand<ConsentCommand>().HandleAsync(turnContext, parts, cancellationToken);
-        }
-
-        if (StringMatchesFullOrSubString(parts[1], CommandConstants.Data))
-        {
-            await GetCommand<DataCommand>().HandleAsync(turnContext, parts, cancellationToken);
-        }
-
-        if (StringMatchesFullOrSubString(parts[1], CommandConstants.Here))
-        {
-            await GetCommand<HereCommand>().HandleAsync(turnContext, parts, cancellationToken);
-        }
-
-        if (StringMatchesFullOrSubString(parts[1], CommandConstants.Help))
-        {
-            if (!HelpCommand.IsCommandsCacheInitialized())
-                HelpCommand.InitCommandsCache(_commands);
-
-            await GetCommand<HelpCommand>().HandleAsync(turnContext, parts, cancellationToken);
-        }
+        await GetCommand<HelpCommand>().HandleAsync(ctx, parts, ct);
     }
 
     #region Helpers

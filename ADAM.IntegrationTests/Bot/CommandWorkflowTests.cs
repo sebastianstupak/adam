@@ -26,7 +26,7 @@ public class CommandWorkflowTests(TestWebAppFactory factory) : IntegrationTestBa
         _userService = factory.Services.GetRequiredService<IUserService>();
         _commands = factory.Services.GetRequiredService<IEnumerable<ICommand>>();
         _adapter = new TestAdapter();
-        _bot = new AdamBot(_userService, DbCtx, _commands);
+        _bot = new AdamBot(_userService, _commands);
 
         return Task.CompletedTask;
     }
