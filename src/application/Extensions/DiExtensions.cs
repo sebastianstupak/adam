@@ -1,4 +1,3 @@
-using System.Reflection;
 using ADAM.Application.Bot;
 using ADAM.Application.Bot.Commands;
 using ADAM.Application.Jobs;
