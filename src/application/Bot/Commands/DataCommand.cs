@@ -30,7 +30,7 @@ public class DataCommand : Command
 
     public override CommandMatchTargets GetCommandMatchTargets() => new()
     {
-        Targets = [CommandConstants.Data],
+        CommandTargets = [CommandConstants.Data],
         SubcommandTargets = null
     };
 }

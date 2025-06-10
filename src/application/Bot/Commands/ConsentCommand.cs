@@ -35,7 +35,7 @@ public class ConsentCommand(IUserService userService) : Command
 
     public override CommandMatchTargets GetCommandMatchTargets() => new()
     {
-        Targets = [CommandConstants.Consent],
+        CommandTargets = [CommandConstants.Consent],
         SubcommandTargets = null
     };
 }

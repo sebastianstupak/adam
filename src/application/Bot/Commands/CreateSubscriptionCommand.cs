@@ -47,7 +47,7 @@ public class CreateSubscriptionCommand(IUserService userService) : Command
 
     public override CommandMatchTargets GetCommandMatchTargets() => new()
     {
-        Targets = [CommandConstants.Subscribe, CommandConstants.Subscribe[..3], CommandConstants.Subscribe[..1]],
+        CommandTargets = [CommandConstants.Subscribe, CommandConstants.Subscribe[..3], CommandConstants.Subscribe[..1]],
         SubcommandTargets = [CommandConstants.Food, CommandConstants.Company]
     };
 }

@@ -50,7 +50,7 @@ public class HelpCommand : Command
 
     public override CommandMatchTargets GetCommandMatchTargets() => new()
     {
-        Targets = [CommandConstants.Help],
+        CommandTargets = [CommandConstants.Help],
         SubcommandTargets = null
     };
 

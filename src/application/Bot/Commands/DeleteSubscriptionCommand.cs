@@ -37,7 +37,7 @@ public class DeleteSubscriptionCommand(IUserService userService) : Command
 
     public override CommandMatchTargets GetCommandMatchTargets() => new()
     {
-        Targets = [CommandConstants.Unsubscribe, CommandConstants.Unsubscribe[..5], CommandConstants.Unsubscribe[..3]],
+        CommandTargets = [CommandConstants.Unsubscribe, CommandConstants.Unsubscribe[..5], CommandConstants.Unsubscribe[..3]],
         SubcommandTargets = null
     };
 }

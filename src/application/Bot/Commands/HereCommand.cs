@@ -57,7 +57,7 @@ public class HereCommand(AppDbContext dbCtx) : Command
 
     public override CommandMatchTargets GetCommandMatchTargets() => new()
     {
-        Targets = [CommandConstants.Here],
+        CommandTargets = [CommandConstants.Here],
         SubcommandTargets = null
     };
 }

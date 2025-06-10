@@ -13,46 +13,61 @@ public class AdamBot(IUserService userService, IEnumerable<ICommand> commands) :
     protected override async Task OnMessageActivityAsync(ITurnContext<IMessageActivity> turnContext,
         CancellationToken cancellationToken)
     {
-        var messageContent = turnContext.Activity.Text;
-        var teamsId = turnContext.Activity.From.Id ?? throw new Exception("Unable to get user ID from interaction!");
+        try
+        {
+            var messageContent = turnContext.Activity.Text;
+            var teamsId = turnContext.Activity.From.Id ??
+                          throw new Exception("Unable to get user ID from interaction!");
 
-        // Leave if it doesn't start with '@adam'
-        if (!messageContent.StartsWith(CommandConstants.AdamBase, StringComparison.InvariantCultureIgnoreCase))
-            return;
+            // Leave if it doesn't start with '@adam'
+            if (!messageContent.StartsWith(CommandConstants.AdamBase, StringComparison.InvariantCultureIgnoreCase))
+                return;
 
-        // Leave if it doesn't have 2 or more params (e.g. is only '@adam') 
-        var parts = messageContent.Trim().Split(" ");
-        if (parts.Length < 2 ||
-            !parts[0].Equals(CommandConstants.AdamBase, StringComparison.InvariantCultureIgnoreCase))
-            return;
+            // Leave if it doesn't have 2 or more params (e.g. is only '@adam') 
+            var parts = messageContent.Trim().Split(" ");
+            if (parts.Length < 2 ||
+                !parts[0].Equals(CommandConstants.AdamBase, StringComparison.InvariantCultureIgnoreCase))
+                return;
 
-        var commandName = parts[1]; // e.g. help, here, subscribe, etc.
+            var commandName = parts[1]; // e.g. help, here, subscribe, etc.
 
-        // Check consent first (skip for consent/data commands)
-        if (await UserRequiresConsentAsync(turnContext, cancellationToken, teamsId, commandName))
-            return;
+            // Check consent first (skip for consent/data commands)
+            if (await UserRequiresConsentAsync(turnContext, cancellationToken, teamsId, commandName))
+                return;
 
-        // Required for @adam help to work
-        if (!HelpCommand.IsCommandsCacheInitialized())
-            HelpCommand.InitCommandsCache(_commands);
+            // Required for @adam help to work
+            if (!HelpCommand.IsCommandsCacheInitialized())
+                HelpCommand.InitCommandsCache(_commands);
 
-        // Route to appropriate command handler
-        var cmd = RetrieveCommand(turnContext, parts, commandName, cancellationToken);
-        await cmd.HandleAsync(turnContext, parts, cancellationToken);
+            // Route to appropriate command handler
+            var cmd = RetrieveCommand(turnContext, parts, commandName, cancellationToken);
+            if (cmd is null)
+            {
+                await turnContext.SendActivityAsync(MessageFactory.Text($"❌ Unknown command"), cancellationToken);
+                return;
+            }
+
+            await cmd.HandleAsync(turnContext, parts, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            await turnContext.SendActivityAsync(
+                MessageFactory.Text($"❌ Unhandled error occurred: {ex.Message}"), cancellationToken);
+        }
     }
 
     #region Helpers
 
-    private ICommand RetrieveCommand(ITurnContext<IMessageActivity> ctx, string[] parts, string commandName,
+    private ICommand? RetrieveCommand(ITurnContext<IMessageActivity> ctx, string[] parts, string commandName,
         CancellationToken ct)
     {
         // Get commands whose target command (e.g. help, subscribe, data, here, ...) matches
         var matchingCommands = _commands.Where(c =>
-            c.GetCommandMatchTargets().Targets.Contains(commandName, StringComparer.InvariantCultureIgnoreCase)
+            c.GetCommandMatchTargets().CommandTargets.Contains(commandName, StringComparer.InvariantCultureIgnoreCase)
         ).ToList();
 
         if (!matchingCommands.Any())
-            throw new InvalidOperationException($"Command matching {commandName} not found.");
+            return null;
 
         // verify duplicate subcommands (for correct routing, two commands can't have the same subcommand(s))
         if (!AreSubcommandsUnique(matchingCommands, out var duplicates))
@@ -78,7 +93,7 @@ public class AdamBot(IUserService userService, IEnumerable<ICommand> commands) :
         return !duplicates.Any();
     }
 
-    private static ICommand GetCommandOrSubcommand(string[] parts, List<ICommand> matchingCommands)
+    private static ICommand? GetCommandOrSubcommand(string[] parts, List<ICommand> matchingCommands)
     {
         ICommand selectedCommand;
 
@@ -98,7 +113,7 @@ public class AdamBot(IUserService userService, IEnumerable<ICommand> commands) :
             );
         }
 
-        return selectedCommand ?? matchingCommands.First();
+        return selectedCommand;
     }
 
     private static bool StringMatchesStrings(string testee, params string[] targets)
