@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ADAM.Application.Bot.Commands;
 
+[Command]
 public class HereCommand(AppDbContext dbCtx) : Command
 {
     private readonly AppDbContext _dbCtx = dbCtx;

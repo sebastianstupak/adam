@@ -97,8 +97,8 @@ public class AdamBot(IUserService userService, IEnumerable<ICommand> commands) :
     {
         ICommand selectedCommand;
 
-        // if parts >= 2, it contains the subcommand name. [0] = @adam, [1] = command, [2] = subcommand, [3..] = params
-        if (parts.Length >= 2)
+        // if parts > 2, it contains the subcommand name. [0] = @adam, [1] = command, [2] = subcommand, [3..] = params
+        if (parts.Length > 2)
         {
             selectedCommand = matchingCommands.FirstOrDefault(c =>
                 c.GetCommandMatchTargets().SubcommandTargets

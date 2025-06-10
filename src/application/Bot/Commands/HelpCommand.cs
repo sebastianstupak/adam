@@ -4,6 +4,7 @@ using Microsoft.Bot.Builder;
 
 namespace ADAM.Application.Bot.Commands;
 
+[Command]
 public class HelpCommand : Command
 {
     private static IEnumerable<ICommand>? _commands;

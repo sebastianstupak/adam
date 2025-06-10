@@ -5,6 +5,7 @@ using Microsoft.Bot.Builder;
 
 namespace ADAM.Application.Bot.Commands;
 
+[Command]
 public class ListSubscriptionsCommand(IUserService userService) : Command
 {
     private readonly IUserService _userService = userService;

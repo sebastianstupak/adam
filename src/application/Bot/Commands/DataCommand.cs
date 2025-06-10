@@ -3,6 +3,7 @@ using Microsoft.Bot.Builder;
 
 namespace ADAM.Application.Bot.Commands;
 
+[Command]
 public class DataCommand : Command
 {
     protected override async Task HandleCommandAsync(ITurnContext context, string[] cmdParts, CancellationToken ct)
