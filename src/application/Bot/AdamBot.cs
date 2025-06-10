@@ -26,17 +26,18 @@ public class AdamBot(IUserService userService, IEnumerable<ICommand> commands) :
             !parts[0].Equals(CommandConstants.AdamBase, StringComparison.InvariantCultureIgnoreCase))
             return;
 
-        var command = parts[1];
+        var commandName = parts[1]; // e.g. help, here, subscribe, etc.
 
         // Check consent first (skip for consent/data commands)
-        if (await UserRequiresConsentAsync(turnContext, cancellationToken, teamsId, command))
+        if (await UserRequiresConsentAsync(turnContext, cancellationToken, teamsId, commandName))
             return;
 
+        // Required for @adam help to work
         if (!HelpCommand.IsCommandsCacheInitialized())
             HelpCommand.InitCommandsCache(_commands);
 
         // Route to appropriate command handler
-        var cmd = RetrieveCommand(turnContext, parts, command, cancellationToken);
+        var cmd = RetrieveCommand(turnContext, parts, commandName, cancellationToken);
         await cmd.HandleAsync(turnContext, parts, cancellationToken);
     }
 

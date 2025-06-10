@@ -7,6 +7,7 @@ namespace ADAM.Application.Bot.Commands;
 public class HelpCommand : Command
 {
     private static IEnumerable<ICommand>? _commands;
+    private static Microsoft.Bot.Schema.Activity? _helpMessage;
 
     protected override async Task HandleCommandAsync(ITurnContext context, string[] cmdParts, CancellationToken ct)
     {
@@ -15,22 +16,25 @@ public class HelpCommand : Command
             if (_commands is null)
                 throw new Exception("Commands aren't initialized!");
 
-            var sb = new StringBuilder();
-            foreach (var command in _commands)
+            if (_helpMessage is null)
             {
-                sb.Append($"""
-                           **{command.GetCommandName()}** => {command.GetCommandUsageExample()}
-                           """)
-                    .AppendLine($"""
-                                 
-                                 {command.GetCommandDescription()}
-                                 """)
-                    .AppendLine();
+                var sb = new StringBuilder();
+                foreach (var command in _commands)
+                {
+                    sb.Append($"""
+                               **{command.GetCommandName()}** => {command.GetCommandUsageExample()}
+                               """)
+                        .AppendLine($"""
+
+                                     {command.GetCommandDescription()}
+                                     """)
+                        .AppendLine();
+                }
+
+                _helpMessage = MessageFactory.Text(sb.ToString());
             }
 
-            await context.SendActivityAsync(
-                MessageFactory.Text(sb.ToString()), ct
-            );
+            await context.SendActivityAsync(_helpMessage, ct);
         }
         catch (Exception e)
         {
