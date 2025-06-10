@@ -9,7 +9,9 @@ public class UserRepository(AppDbContext dbCtx) : IUserRepository
 
     public Task<User?> GetUserAsync(string teamsId)
     {
-        return _dbCtx.Users.FirstOrDefaultAsync(u => u.TeamsId == teamsId);
+        return _dbCtx.Users
+            .Include(u => u.Subscriptions)
+            .FirstOrDefaultAsync(u => u.TeamsId == teamsId);
     }
 
     public async Task<IEnumerable<(User user, IEnumerable<Subscription> subscriptions)>>

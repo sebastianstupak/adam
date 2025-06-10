@@ -13,18 +13,24 @@ public class CreateSubscriptionCommand(IUserService userService) : Command
     {
         try
         {
-            await _userService.CreateUserSubscriptionAsync(new CreateUserSubscriptionDto
-            {
-                TeamsId = context.Activity.From.Id,
-                Type = cmdParts[2].Equals(CommandConstants.Company,
-                    StringComparison.InvariantCultureIgnoreCase)
-                    ? SubscriptionType.Merchant
-                    : SubscriptionType.Offer,
-                Value = string.Join(" ", cmdParts[3..])
-            });
+            var subscriptionType = cmdParts[2].Equals(CommandConstants.Company,
+                StringComparison.InvariantCultureIgnoreCase)
+                ? SubscriptionType.Merchant
+                : SubscriptionType.Offer;
+
+            await _userService.CreateUserSubscriptionAsync(
+                new CreateUserSubscriptionDto
+                {
+                    TeamsId = context.Activity.From.Id,
+                    Type = subscriptionType,
+                    Value = string.Join(" ", cmdParts[3..])
+                }
+            );
 
             await context.SendActivityAsync(
-                MessageFactory.Text("✅ Subscription created successfully."), ct
+                MessageFactory.Text(
+                    $"✅ Subscription for {(subscriptionType is SubscriptionType.Merchant ? "company" : "food")} created successfully."),
+                ct
             );
         }
         catch (Exception e)

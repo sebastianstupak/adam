@@ -53,7 +53,10 @@ public class UserService(
             user = await _userRepository.GetUserAsync(dto.TeamsId);
         }
 
-        user!.Subscriptions.Add(new Subscription
+        if (user!.Subscriptions.Any(s => s.Value.Equals(dto.Value, StringComparison.InvariantCultureIgnoreCase)))
+            throw new InvalidOperationException("A subscription with this value already exists.");
+
+        user.Subscriptions.Add(new Subscription
         {
             Type = dto.Type,
             Value = dto.Value,

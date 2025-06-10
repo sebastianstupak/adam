@@ -32,6 +32,9 @@ public class AdamBot(IUserService userService, IEnumerable<ICommand> commands) :
         if (await UserRequiresConsentAsync(turnContext, cancellationToken, teamsId, command))
             return;
 
+        if (!HelpCommand.IsCommandsCacheInitialized())
+            HelpCommand.InitCommandsCache(_commands);
+
         // Route to appropriate command handler
         var cmd = RetrieveCommand(turnContext, parts, command, cancellationToken);
         await cmd.HandleAsync(turnContext, parts, cancellationToken);
@@ -51,10 +54,10 @@ public class AdamBot(IUserService userService, IEnumerable<ICommand> commands) :
             throw new InvalidOperationException($"Command matching {commandName} not found.");
 
         // verify duplicate subcommands (for correct routing, two commands can't have the same subcommand(s))
-        if (!AreSubcommandsUnique(matchingCommands, out var duplicateSubcommands))
+        if (!AreSubcommandsUnique(matchingCommands, out var duplicates))
         {
             throw new InvalidOperationException(
-                $"Duplicate subcommands found for command '{commandName}': {string.Join(", ", duplicateSubcommands)}"
+                $"Duplicate subcommands found for command '{commandName}': {string.Join(", ", duplicates)}"
             );
         }
 
@@ -62,49 +65,39 @@ public class AdamBot(IUserService userService, IEnumerable<ICommand> commands) :
         return GetCommandOrSubcommand(parts, matchingCommands);
     }
 
-    private static bool AreSubcommandsUnique(List<ICommand> matchingCommands, out IEnumerable<string> subcommands)
+    private static bool AreSubcommandsUnique(List<ICommand> matchingCommands, out IEnumerable<string> duplicates)
     {
-        // get all subcommands
-        var allSubcommands = matchingCommands
+        duplicates = matchingCommands
             .Where(c => c.GetCommandMatchTargets().SubcommandTargets != null)
-            .SelectMany(c => c.GetCommandMatchTargets().SubcommandTargets!);
-
-        // extract duplicates
-        subcommands = allSubcommands
+            .SelectMany(c => c.GetCommandMatchTargets().SubcommandTargets!)
             .GroupBy(sub => sub, StringComparer.InvariantCultureIgnoreCase)
             .Where(g => g.Count() > 1)
             .Select(g => g.Key);
 
-        return !subcommands.Any();
+        return !duplicates.Any();
     }
 
     private static ICommand GetCommandOrSubcommand(string[] parts, List<ICommand> matchingCommands)
     {
         ICommand selectedCommand;
 
-        // if parts > 2, it contains the subcommand name. [0] = @adam, [1] = command, [2] = subcommand, [3..] = params
-        if (parts.Length > 2)
+        // if parts >= 2, it contains the subcommand name. [0] = @adam, [1] = command, [2] = subcommand, [3..] = params
+        if (parts.Length >= 2)
         {
-            var subcommandName = parts[2];
-
-            // Select the command that matches the subcommand
             selectedCommand = matchingCommands.FirstOrDefault(c =>
                 c.GetCommandMatchTargets().SubcommandTargets
-                    ?.Contains(subcommandName, StringComparer.InvariantCultureIgnoreCase) == true
+                    ?.Contains(parts[2], StringComparer.InvariantCultureIgnoreCase) == true
             );
-
-            selectedCommand ??= matchingCommands.First();
         }
         else
         {
-            // Select the first subcommands-less command if no subcommand is present, or fallback to the first previous one.
             selectedCommand = matchingCommands.FirstOrDefault(c =>
                 c.GetCommandMatchTargets().SubcommandTargets == null ||
                 !c.GetCommandMatchTargets().SubcommandTargets.Any()
-            ) ?? matchingCommands.First();
+            );
         }
 
-        return selectedCommand;
+        return selectedCommand ?? matchingCommands.First();
     }
 
     private static bool StringMatchesStrings(string testee, params string[] targets)

@@ -20,8 +20,11 @@ public class HelpCommand : Command
             {
                 sb.Append($"""
                            **{command.GetCommandName()}** => {command.GetCommandUsageExample()}
-                           {command.GetCommandDescription()}
                            """)
+                    .AppendLine($"""
+                                 
+                                 {command.GetCommandDescription()}
+                                 """)
                     .AppendLine();
             }
 
