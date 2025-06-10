@@ -72,7 +72,7 @@ public class AdamBot(IUserService userService, IEnumerable<ICommand> commands) :
         // verify duplicate subcommands (for correct routing, two commands can't have the same subcommand(s))
         if (!AreSubcommandsUnique(matchingCommands, out var duplicates))
         {
-            throw new InvalidOperationException(
+            throw new Exception(
                 $"Duplicate subcommands found for command '{commandName}': {string.Join(", ", duplicates)}"
             );
         }
