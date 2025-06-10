@@ -1,7 +1,6 @@
 using ADAM.Domain;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-using TUnit.Core.Interfaces;
 
 namespace ADAM.IntegrationTests.TestConfiguration;
 

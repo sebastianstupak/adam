@@ -1,6 +1,4 @@
-using System.Collections;
 using ADAM.Application.Objects;
-using ADAM.Domain.Models;
 
 namespace ADAM.Application.Services.Users;
 

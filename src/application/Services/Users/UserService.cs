@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Diagnostics;
 using ADAM.Application.Objects;
 using ADAM.Domain;
 using ADAM.Domain.Models;
