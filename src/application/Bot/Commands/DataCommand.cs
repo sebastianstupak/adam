@@ -1,3 +1,4 @@
+using ADAM.Application.Objects;
 using Microsoft.Bot.Builder;
 
 namespace ADAM.Application.Bot.Commands;
@@ -26,4 +27,10 @@ public class DataCommand : Command
     public override string GetCommandName() => "Data";
     public override string GetCommandUsageExample() => "@adam data";
     public override string GetCommandDescription() => "Shows what data we store about you.";
+
+    public override CommandMatchTargets GetCommandMatchTargets() => new()
+    {
+        Targets = [CommandConstants.Data],
+        SubcommandTargets = null
+    };
 }

@@ -1,4 +1,5 @@
 using System.Text;
+using ADAM.Application.Objects;
 using Microsoft.Bot.Builder;
 
 namespace ADAM.Application.Bot.Commands;
@@ -39,6 +40,12 @@ public class HelpCommand : Command
     public override string GetCommandName() => "Help";
     public override string GetCommandUsageExample() => "@adam help";
     public override string GetCommandDescription() => "Shows this message.";
+
+    public override CommandMatchTargets GetCommandMatchTargets() => new()
+    {
+        Targets = [CommandConstants.Help],
+        SubcommandTargets = null
+    };
 
     public static bool IsCommandsCacheInitialized() => _commands is not null;
     public static void InitCommandsCache(IEnumerable<ICommand> commands) => _commands = commands;

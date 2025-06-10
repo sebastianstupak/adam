@@ -74,10 +74,12 @@ public class MessageSendingService(IBotFrameworkHttpAdapter adapter, AppDbContex
         {
             messageBuilder.AppendLine(
                 $"**{group.Offer.Meal}** ([{group.Offer.MerchantName}]({group.Offer.HtmlRecord.Url}))");
+            messageBuilder.AppendLine();
             messageBuilder.AppendLine($"Price: {(group.Offer.Price is null
                     ? "unknown"
                     : $"{group.Offer.Price.ToString()} €"
                 )}");
+            messageBuilder.AppendLine();
 
             var userMentions = new List<string>();
 

@@ -38,4 +38,10 @@ public class CreateSubscriptionCommand(IUserService userService) : Command
     public override string GetCommandName() => "Create Subscription";
     public override string GetCommandUsageExample() => "@adam s (food/company) (value)";
     public override string GetCommandDescription() => "Used to subscribe to a food or company alert during scalping.";
+
+    public override CommandMatchTargets GetCommandMatchTargets() => new()
+    {
+        Targets = [CommandConstants.Subscribe, CommandConstants.Subscribe[..3], CommandConstants.Subscribe[..1]],
+        SubcommandTargets = [CommandConstants.Food, CommandConstants.Company]
+    };
 }

@@ -1,3 +1,4 @@
+using ADAM.Application.Objects;
 using ADAM.Application.Services.Users;
 using ADAM.Domain.Models;
 using Microsoft.Bot.Builder;
@@ -38,4 +39,10 @@ public class ListSubscriptionsCommand(IUserService userService) : Command
     public override string GetCommandName() => "List Subscriptions";
     public override string GetCommandUsageExample() => "@adam list";
     public override string GetCommandDescription() => "Lists all your subscriptions.";
+
+    public override CommandMatchTargets GetCommandMatchTargets() => new()
+    {
+        Targets = [CommandConstants.Subscribe, CommandConstants.Subscribe[..3], CommandConstants.Subscribe[..1]],
+        SubcommandTargets = [CommandConstants.List]
+    };
 }

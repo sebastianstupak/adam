@@ -1,3 +1,4 @@
+using ADAM.Application.Objects;
 using ADAM.Application.Services.Users;
 using Microsoft.Bot.Builder;
 
@@ -33,4 +34,10 @@ public class DeleteSubscriptionCommand(IUserService userService) : Command
     public override string GetCommandName() => "Delete Subscription";
     public override string GetCommandUsageExample() => "@adam uns (id)";
     public override string GetCommandDescription() => "Used to unsubscribe from a food or company alert.";
+
+    public override CommandMatchTargets GetCommandMatchTargets() => new()
+    {
+        Targets = [CommandConstants.Unsubscribe, CommandConstants.Unsubscribe[..5], CommandConstants.Unsubscribe[..3]],
+        SubcommandTargets = null
+    };
 }
