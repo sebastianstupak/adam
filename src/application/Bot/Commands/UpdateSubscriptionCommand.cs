@@ -4,7 +4,7 @@ using Microsoft.Bot.Builder;
 
 namespace ADAM.Application.Bot.Commands;
 
-[Command]
+[Command("Update Subscription", "@adam s update (id) (new value)", "Used to update the value of a subscription.")]
 public class UpdateSubscriptionCommand(IUserService userService) : Command
 {
     private readonly IUserService _userService = userService;
@@ -36,10 +36,6 @@ public class UpdateSubscriptionCommand(IUserService userService) : Command
             );
         }
     }
-
-    public override string GetCommandName() => "Update Subscription";
-    public override string GetCommandUsageExample() => "@adam s update (id) (new value)";
-    public override string GetCommandDescription() => "Used to update the value of a subscription.";
 
     public override CommandMatchTargets GetCommandMatchTargets() => new()
     {

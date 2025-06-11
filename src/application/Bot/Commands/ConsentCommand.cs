@@ -4,7 +4,7 @@ using Microsoft.Bot.Builder;
 
 namespace ADAM.Application.Bot.Commands;
 
-[Command]
+[Command("Consent", "@adam consent", "Used to consent to having your data saved.")]
 public class ConsentCommand(IUserService userService) : Command
 {
     private readonly IUserService _userService = userService;
@@ -29,10 +29,6 @@ public class ConsentCommand(IUserService userService) : Command
             );
         }
     }
-
-    public override string GetCommandName() => "Consent";
-    public override string GetCommandUsageExample() => "@adam consent";
-    public override string GetCommandDescription() => "Used to consent to having your data saved.";
 
     public override CommandMatchTargets GetCommandMatchTargets() => new()
     {

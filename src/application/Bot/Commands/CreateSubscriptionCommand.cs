@@ -5,7 +5,8 @@ using Microsoft.Bot.Builder;
 
 namespace ADAM.Application.Bot.Commands;
 
-[Command]
+[Command("Create Subscription", "@adam s (food/company) (value)",
+    "Used to subscribe to a food or company alert during scalping")]
 public class CreateSubscriptionCommand(IUserService userService) : Command
 {
     private readonly IUserService _userService = userService;
@@ -41,10 +42,6 @@ public class CreateSubscriptionCommand(IUserService userService) : Command
             );
         }
     }
-
-    public override string GetCommandName() => "Create Subscription";
-    public override string GetCommandUsageExample() => "@adam s (food/company) (value)";
-    public override string GetCommandDescription() => "Used to subscribe to a food or company alert during scalping.";
 
     public override CommandMatchTargets GetCommandMatchTargets() => new()
     {

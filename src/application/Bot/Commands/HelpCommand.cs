@@ -1,10 +1,11 @@
+using System.Reflection;
 using System.Text;
 using ADAM.Application.Objects;
 using Microsoft.Bot.Builder;
 
 namespace ADAM.Application.Bot.Commands;
 
-[Command]
+[Command("Help", "@adam help", "Shows this message.")]
 public class HelpCommand : Command
 {
     private static IEnumerable<ICommand>? _commands;
@@ -22,12 +23,18 @@ public class HelpCommand : Command
                 var sb = new StringBuilder();
                 foreach (var command in _commands)
                 {
+                    if (Attribute.GetCustomAttribute(command.GetType(), typeof(CommandAttribute))
+                        is not CommandAttribute commandAttribute)
+                    {
+                        throw new Exception($"Command doesn't have the {typeof(CommandAttribute)} attribute");
+                    }
+
                     sb.Append($"""
-                               **{command.GetCommandName()}** => {command.GetCommandUsageExample()}
+                               **{commandAttribute.Name}** => {commandAttribute.UsageExample}
                                """)
                         .AppendLine($"""
 
-                                     {command.GetCommandDescription()}
+                                     {commandAttribute.Description}
                                      """)
                         .AppendLine();
                 }
@@ -44,10 +51,6 @@ public class HelpCommand : Command
             );
         }
     }
-
-    public override string GetCommandName() => "Help";
-    public override string GetCommandUsageExample() => "@adam help";
-    public override string GetCommandDescription() => "Shows this message.";
 
     public override CommandMatchTargets GetCommandMatchTargets() => new()
     {

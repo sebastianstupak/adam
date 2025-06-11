@@ -19,9 +19,6 @@ public abstract class Command : ICommand
         }
     }
 
-    public abstract string GetCommandName();
-    public abstract string GetCommandUsageExample();
-    public abstract string GetCommandDescription();
     public abstract CommandMatchTargets GetCommandMatchTargets();
 
     protected abstract Task HandleCommandAsync(

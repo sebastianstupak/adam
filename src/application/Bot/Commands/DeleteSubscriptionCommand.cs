@@ -4,7 +4,7 @@ using Microsoft.Bot.Builder;
 
 namespace ADAM.Application.Bot.Commands;
 
-[Command]
+[Command("Delete Subscription", "@adam uns (id)", "Used to remove a subscription.")]
 public class DeleteSubscriptionCommand(IUserService userService) : Command
 {
     private readonly IUserService _userService = userService;
@@ -32,13 +32,10 @@ public class DeleteSubscriptionCommand(IUserService userService) : Command
         }
     }
 
-    public override string GetCommandName() => "Delete Subscription";
-    public override string GetCommandUsageExample() => "@adam uns (id)";
-    public override string GetCommandDescription() => "Used to unsubscribe from a food or company alert.";
-
     public override CommandMatchTargets GetCommandMatchTargets() => new()
     {
-        CommandTargets = [CommandConstants.Unsubscribe, CommandConstants.Unsubscribe[..5], CommandConstants.Unsubscribe[..3]],
+        CommandTargets =
+            [CommandConstants.Unsubscribe, CommandConstants.Unsubscribe[..5], CommandConstants.Unsubscribe[..3]],
         SubcommandTargets = null
     };
 }

@@ -40,7 +40,7 @@ public class AdamBot(IUserService userService, IEnumerable<ICommand> commands) :
                 HelpCommand.InitCommandsCache(_commands);
 
             // Route to appropriate command handler
-            var cmd = RetrieveCommand(turnContext, parts, commandName, cancellationToken);
+            var cmd = RetrieveCommand(parts, commandName);
             if (cmd is null)
             {
                 await turnContext.SendActivityAsync(MessageFactory.Text($"❌ Unknown command"), cancellationToken);
@@ -58,8 +58,7 @@ public class AdamBot(IUserService userService, IEnumerable<ICommand> commands) :
 
     #region Helpers
 
-    private ICommand? RetrieveCommand(ITurnContext<IMessageActivity> ctx, string[] parts, string commandName,
-        CancellationToken ct)
+    private ICommand? RetrieveCommand(string[] parts, string commandName)
     {
         // Get commands whose target command (e.g. help, subscribe, data, here, ...) matches
         var matchingCommands = _commands.Where(c =>
@@ -78,7 +77,7 @@ public class AdamBot(IUserService userService, IEnumerable<ICommand> commands) :
         }
 
         // retrieve the subcommand based on the command parts, or return the main command if no subcommand matches
-        return GetCommandOrSubcommand(parts, matchingCommands);
+        return matchingCommands.Count == 1 ? matchingCommands.First() : GetCommandOrSubcommand(parts, matchingCommands);
     }
 
     private static bool AreSubcommandsUnique(List<ICommand> matchingCommands, out IEnumerable<string> duplicates)

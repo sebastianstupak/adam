@@ -5,7 +5,7 @@ using Microsoft.Bot.Builder;
 
 namespace ADAM.Application.Bot.Commands;
 
-[Command]
+[Command("List Subscriptions", "@adam list", "Lists all your subscriptions.")]
 public class ListSubscriptionsCommand(IUserService userService) : Command
 {
     private readonly IUserService _userService = userService;
@@ -36,10 +36,6 @@ public class ListSubscriptionsCommand(IUserService userService) : Command
 
         await context.SendActivityAsync(output, ct);
     }
-
-    public override string GetCommandName() => "List Subscriptions";
-    public override string GetCommandUsageExample() => "@adam list";
-    public override string GetCommandDescription() => "Lists all your subscriptions.";
 
     public override CommandMatchTargets GetCommandMatchTargets() => new()
     {
