@@ -15,17 +15,13 @@ public class ConsentCommand(IUserService userService) : Command
         {
             await _userService.UpdateUserConsentAsync(context.Activity.From.Id, context.Activity.From.Name);
             await context.SendActivityAsync(
-                MessageFactory.Text("""
-                                    ✅ Consent updated.
-
-                                    To receive alerts based on your subscriptions, set a channel I should message you in using `@adam here`.
-                                    """), ct
+                MessageFactory.Text("✅ Consent updated."), ct
             );
         }
-        catch
+        catch (Exception ex)
         {
             await context.SendActivityAsync(
-                MessageFactory.Text("❌ Error updating consent!"), ct
+                MessageFactory.Text($"❌ Error updating consent: {ex.Message}"), ct
             );
         }
     }

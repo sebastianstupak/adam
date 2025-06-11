@@ -29,10 +29,10 @@ public class UpdateSubscriptionCommand(IUserService userService) : Command
                 MessageFactory.Text("✅ Subscription updated successfully."), ct
             );
         }
-        catch
+        catch (Exception ex)
         {
             await context.SendActivityAsync(
-                MessageFactory.Text("❌ Error updating subscription"), ct
+                MessageFactory.Text($"❌ Error updating subscription: {ex.Message}"), ct
             );
         }
     }

@@ -72,7 +72,7 @@ public class UserService(
                            ?? throw new SubscriptionNotFoundException();
 
         if (!subscription.User.TeamsId.Equals(teamsId, StringComparison.InvariantCultureIgnoreCase))
-            throw new UnauthorizedAccessException("You can't delete this subscription.");
+            throw new UnauthorizedAccessException("You can't update this subscription.");
 
         subscription.Value = dto.NewValue;
 
@@ -127,8 +127,8 @@ public class UserService(
 
     private static void ValidateSubscriptionValueLength(string value)
     {
-        if (string.IsNullOrEmpty(value) || string.IsNullOrWhiteSpace(value) || value.Length > 255)
-            throw new ArgumentOutOfRangeException(value);
+        if (string.IsNullOrWhiteSpace(value) || value.Length > 255)
+            throw new Exception("Missing or invalid value, or value longer than 255 characters.");
     }
 }
 

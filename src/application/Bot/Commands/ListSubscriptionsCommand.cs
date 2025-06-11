@@ -12,29 +12,38 @@ public class ListSubscriptionsCommand(IUserService userService) : Command
 
     protected override async Task HandleCommandAsync(ITurnContext context, string[] cmdParts, CancellationToken ct)
     {
-        var subscriptions =
-            (await _userService.GetUserSubscriptionsAsync(context.Activity.From.Id))
-            .ToList();
+        try
+        {
+            var subscriptions =
+                (await _userService.GetUserSubscriptionsAsync(context.Activity.From.Id))
+                .ToList();
 
-        var output = subscriptions.Count != 0
-            ? MessageFactory.Text(
-                "*(id) item*\n\n" +
-                $"# Companies:\n{
-                    string.Join(
-                        ", ",
-                        subscriptions.Where(s => s.Type == SubscriptionType.Merchant).Select(s => $"({s.Id}) {s.Value}")
-                    )
-                }\n" +
-                $"# Food:\n{
-                    string.Join(
-                        ", ",
-                        subscriptions.Where(s => s.Type == SubscriptionType.Offer).Select(s => $"({s.Id}) {s.Value}")
-                    )
-                }"
-            )
-            : MessageFactory.Text("No subscriptions found.");
+            var output = subscriptions.Count != 0
+                ? MessageFactory.Text(
+                    "*(id) item*\n\n" +
+                    $"# Companies:\n{
+                        string.Join(
+                            ", ",
+                            subscriptions.Where(s => s.Type == SubscriptionType.Merchant).Select(s => $"({s.Id}) {s.Value}")
+                        )
+                    }\n" +
+                    $"# Food:\n{
+                        string.Join(
+                            ", ",
+                            subscriptions.Where(s => s.Type == SubscriptionType.Offer).Select(s => $"({s.Id}) {s.Value}")
+                        )
+                    }"
+                )
+                : MessageFactory.Text("No subscriptions found.");
 
-        await context.SendActivityAsync(output, ct);
+            await context.SendActivityAsync(output, ct);
+        }
+        catch (Exception ex)
+        {
+            await context.SendActivityAsync(
+                MessageFactory.Text($"❌ Error listing subscriptions: {ex.Message}"), ct
+            );
+        }
     }
 
     public override CommandMatchTargets GetCommandMatchTargets() => new()
