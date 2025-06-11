@@ -22,5 +22,5 @@ services:
     volumes:
       - <<: *common-volumes
       - type: bind
-        source: /home/visnovskya/data
+        source: ${HOME}/data
         target: /app/data
