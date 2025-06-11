@@ -15,9 +15,9 @@ Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-co
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{B6F3DD17-BF82-4F8E-875E-B7D0451B1ED4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ADAM.UnitTests", "API.Tests\ADAM.UnitTests\ADAM.UnitTests.csproj", "{1939F7D2-2A91-42CF-B16E-1D334E9BBB67}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ADAM.UnitTests", "tests\API.Tests\ADAM.UnitTests\ADAM.UnitTests.csproj", "{1939F7D2-2A91-42CF-B16E-1D334E9BBB67}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ADAM.IntegrationTests", "ADAM.IntegrationTests\ADAM.IntegrationTests.csproj", "{7BE4DE22-0BCB-46D3-B417-ECFD28034480}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ADAM.IntegrationTests", "tests\ADAM.IntegrationTests\ADAM.IntegrationTests.csproj", "{7BE4DE22-0BCB-46D3-B417-ECFD28034480}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

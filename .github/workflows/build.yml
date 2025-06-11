@@ -1,0 +1,56 @@
+name: Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      UPLOAD_ARTIFACTS:
+        type: boolean
+        description: "Upload build artifacts?"
+        required: true
+        default: false
+  workflow_call:
+    inputs:
+      UPLOAD_ARTIFACTS:
+        type: boolean
+        required: true
+        default: false
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BUILD_MODE: "Release"
+  ARTIFACT_FOLDER: "Artifacts"
+
+jobs:
+  BUILD:
+    name: Build
+    
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        shell: pwsh
+    
+    steps:
+      - name: 🚀 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: ⚒️ Build ADAM
+        run: |
+          mkdir ${{ env.ARTIFACT_FOLDER }}
+          dotnet build adam.sln -c ${{ env.BUILD_MODE }} -o ${{ env.ARTIFACT_FOLDER }}
+
+      - name: ⬆️ Upload artifacts
+        if: ${{ inputs.UPLOAD_ARTIFACTS }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: 'adam'
+          path: '${{ env.ARTIFACT_FOLDER }}'
