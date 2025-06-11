@@ -1,0 +1,51 @@
+name: Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      RUN_BUILD:
+        description: "Run build?"
+        type: boolean
+        required: true
+        default: false
+
+env:
+  UNIT_TESTS_PATH: ${{ github.workspace }}/tests/API.Tests/ADAM.UnitTests
+  INTEGRATION_TESTS_PATH: ${{ github.workspace }}/tests/ADAM.IntegrationTests
+
+jobs:
+  BUILD:
+    name: Build
+    if: ${{ inputs.RUN_BUILD }}
+    uses: ./.github/workflows/build.yml
+    with:
+      UPLOAD_ARTIFACTS: true
+  
+  TEST:
+    name: Test
+
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: 🚀 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: 🔬 Run unit tests
+        working-directory: ${{ env.UNIT_TESTS_PATH }}
+        run: |
+          dotnet run -c Release
+
+      - name: 🔬 Run integration tests
+        working-directory: ${{ env.INTEGRATION_TESTS_PATH }}
+        run: |
+          dotnet run -c Release
