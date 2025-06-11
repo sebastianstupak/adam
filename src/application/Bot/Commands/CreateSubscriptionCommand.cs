@@ -34,4 +34,8 @@ public class CreateSubscriptionCommand(IUserService userService) : Command
             );
         }
     }
+
+    public override string GetCommandName() => "Create Subscription";
+    public override string GetCommandUsageExample() => "@adam s (food/company) (value)";
+    public override string GetCommandDescription() => "Used to subscribe to a food or company alert during scalping.";
 }

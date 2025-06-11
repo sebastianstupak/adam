@@ -72,7 +72,8 @@ public class MessageSendingService(IBotFrameworkHttpAdapter adapter, AppDbContex
 
         foreach (var group in offerUserGroups)
         {
-            messageBuilder.AppendLine($"**{group.Offer.Meal}** ({group.Offer.MerchantName})");
+            messageBuilder.AppendLine(
+                $"**{group.Offer.Meal}** ([{group.Offer.MerchantName}]({group.Offer.HtmlRecord.Url}))");
             messageBuilder.AppendLine($"Price: {(group.Offer.Price is null
                     ? "unknown"
                     : $"{group.Offer.Price.ToString()} €"

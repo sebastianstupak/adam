@@ -15,6 +15,7 @@ public abstract class CommandConstants
     public const string Help = "help";
 
     public const string Consent = "consent";
+    public const string Data = "data";
 
     public const string Here = "here";
 }

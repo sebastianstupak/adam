@@ -16,17 +16,17 @@ public class ListSubscriptionsCommand(IUserService userService) : Command
 
         var output = subscriptions.Count != 0
             ? MessageFactory.Text(
-                "*item (id)*\n\n" +
+                "*(id) item*\n\n" +
                 $"# Companies:\n{
                     string.Join(
                         ", ",
-                        subscriptions.Where(s => s.Type == SubscriptionType.Merchant).Select(s => $"{s.Value} ({s.Id})")
+                        subscriptions.Where(s => s.Type == SubscriptionType.Merchant).Select(s => $"({s.Id}) {s.Value}")
                     )
                 }\n" +
                 $"# Food:\n{
                     string.Join(
                         ", ",
-                        subscriptions.Where(s => s.Type == SubscriptionType.Offer).Select(s => $"{s.Value} ({s.Id})")
+                        subscriptions.Where(s => s.Type == SubscriptionType.Offer).Select(s => $"({s.Id}) {s.Value}")
                     )
                 }"
             )
@@ -34,4 +34,8 @@ public class ListSubscriptionsCommand(IUserService userService) : Command
 
         await context.SendActivityAsync(output, ct);
     }
+
+    public override string GetCommandName() => "List Subscriptions";
+    public override string GetCommandUsageExample() => "@adam list";
+    public override string GetCommandDescription() => "Lists all your subscriptions.";
 }

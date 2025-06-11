@@ -81,7 +81,7 @@ public class ScrapeAndNotifyJob(
                 );
             }
 
-            dbCtx.AddRange(merchantOffers);
+            dbCtx.MerchantOffers.AddRange(merchantOffers);
             await dbCtx.SaveChangesAsync();
         }
         catch (Exception ex)

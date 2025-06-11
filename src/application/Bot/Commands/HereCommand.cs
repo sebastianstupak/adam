@@ -49,4 +49,8 @@ public class HereCommand(AppDbContext dbCtx) : Command
             );
         }
     }
+
+    public override string GetCommandName() => "Here";
+    public override string GetCommandUsageExample() => "@adam here";
+    public override string GetCommandDescription() => "Used to mark a channel as the one to send alert messages to.";
 }

@@ -66,26 +66,24 @@ public class UserService(
     {
         ValidateSubscriptionValueLength(dto.NewValue);
 
-        var subscription = await _subscriptionRepository.GetSubscriptionAsync(id);
+        var subscription = await _subscriptionRepository.GetSubscriptionAsync(id)
+                           ?? throw new SubscriptionNotFoundException();
 
-        if (subscription is null)
-            throw new SubscriptionNotFoundException();
-
-        if (teamsId is not null
-            && !subscription.User.TeamsId.Equals(teamsId, StringComparison.InvariantCultureIgnoreCase))
-            throw new Exception("You can't modify this subscription.");
+        if (!subscription.User.TeamsId.Equals(teamsId, StringComparison.InvariantCultureIgnoreCase))
+            throw new UnauthorizedAccessException("You can't delete this subscription.");
 
         subscription.Value = dto.NewValue;
 
         await _dbCtx.SaveChangesAsync();
     }
 
-    public async Task DeleteUserSubscriptionAsync(int id)
+    public async Task DeleteUserSubscriptionAsync(long id, string teamsId)
     {
-        var subscription = await _subscriptionRepository.GetSubscriptionAsync(id);
+        var subscription = await _subscriptionRepository.GetSubscriptionAsync(id)
+                           ?? throw new SubscriptionNotFoundException();
 
-        if (subscription is null)
-            throw new SubscriptionNotFoundException();
+        if (!subscription.User.TeamsId.Equals(teamsId, StringComparison.InvariantCultureIgnoreCase))
+            throw new UnauthorizedAccessException("You can't delete this subscription.");
 
         await _subscriptionRepository.DeleteAsync(id);
     }
