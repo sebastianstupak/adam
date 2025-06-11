@@ -10,8 +10,8 @@ on:
         default: false
 
 env:
-  UNIT_TESTS_PATH: ${{ github.workspace }}/API.Tests/ADAM.UnitTests
-  INTEGRATION_TESTS_PATH: ${{ github.workspace }}/ADAM.IntegrationTests
+  UNIT_TESTS_PATH: ${{ github.workspace }}/tests/API.Tests/ADAM.UnitTests
+  INTEGRATION_TESTS_PATH: ${{ github.workspace }}/tests/ADAM.IntegrationTests
 
 jobs:
   BUILD:
