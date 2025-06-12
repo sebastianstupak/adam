@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Diagnostics;
 using ADAM.Application.Objects;
 using ADAM.Domain;
 using ADAM.Domain.Models;
@@ -53,7 +51,11 @@ public class UserService(
             user = await _userRepository.GetUserAsync(dto.TeamsId);
         }
 
-        user!.Subscriptions.Add(new Subscription
+        if (user!.Subscriptions.Where(s => s.Type == dto.Type)
+            .Any(s => s.Value.Equals(dto.Value, StringComparison.InvariantCultureIgnoreCase)))
+            throw new InvalidOperationException("A subscription with this value already exists.");
+
+        user.Subscriptions.Add(new Subscription
         {
             Type = dto.Type,
             Value = dto.Value,
@@ -70,7 +72,7 @@ public class UserService(
                            ?? throw new SubscriptionNotFoundException();
 
         if (!subscription.User.TeamsId.Equals(teamsId, StringComparison.InvariantCultureIgnoreCase))
-            throw new UnauthorizedAccessException("You can't delete this subscription.");
+            throw new UnauthorizedAccessException("You can't update this subscription.");
 
         subscription.Value = dto.NewValue;
 
@@ -125,8 +127,8 @@ public class UserService(
 
     private static void ValidateSubscriptionValueLength(string value)
     {
-        if (string.IsNullOrEmpty(value) || string.IsNullOrWhiteSpace(value) || value.Length > 255)
-            throw new ArgumentOutOfRangeException(value);
+        if (string.IsNullOrWhiteSpace(value) || value.Length > 255)
+            throw new Exception("Missing or invalid value, or value longer than 255 characters.");
     }
 }
 

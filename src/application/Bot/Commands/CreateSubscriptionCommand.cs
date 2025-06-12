@@ -5,6 +5,8 @@ using Microsoft.Bot.Builder;
 
 namespace ADAM.Application.Bot.Commands;
 
+[Command("Create Subscription", "@adam s (food/company) (value)",
+    "Used to subscribe to a food or company alert during scalping")]
 public class CreateSubscriptionCommand(IUserService userService) : Command
 {
     private readonly IUserService _userService = userService;
@@ -13,18 +15,24 @@ public class CreateSubscriptionCommand(IUserService userService) : Command
     {
         try
         {
-            await _userService.CreateUserSubscriptionAsync(new CreateUserSubscriptionDto
-            {
-                TeamsId = context.Activity.From.Id,
-                Type = cmdParts[2].Equals(CommandConstants.Company,
-                    StringComparison.InvariantCultureIgnoreCase)
-                    ? SubscriptionType.Merchant
-                    : SubscriptionType.Offer,
-                Value = string.Join(" ", cmdParts[3..])
-            });
+            var subscriptionType = cmdParts[2].Equals(CommandConstants.Company,
+                StringComparison.InvariantCultureIgnoreCase)
+                ? SubscriptionType.Merchant
+                : SubscriptionType.Offer;
+
+            await _userService.CreateUserSubscriptionAsync(
+                new CreateUserSubscriptionDto
+                {
+                    TeamsId = context.Activity.From.Id,
+                    Type = subscriptionType,
+                    Value = string.Join(" ", cmdParts[3..])
+                }
+            );
 
             await context.SendActivityAsync(
-                MessageFactory.Text("✅ Subscription created successfully."), ct
+                MessageFactory.Text(
+                    $"✅ Subscription for {(subscriptionType is SubscriptionType.Merchant ? "company" : "food")} created successfully."),
+                ct
             );
         }
         catch (Exception e)
@@ -35,7 +43,9 @@ public class CreateSubscriptionCommand(IUserService userService) : Command
         }
     }
 
-    public override string GetCommandName() => "Create Subscription";
-    public override string GetCommandUsageExample() => "@adam s (food/company) (value)";
-    public override string GetCommandDescription() => "Used to subscribe to a food or company alert during scalping.";
+    public override CommandMatchTargets GetCommandMatchTargets() => new()
+    {
+        CommandTargets = [CommandConstants.Subscribe, CommandConstants.Subscribe[..3], CommandConstants.Subscribe[..1]],
+        SubcommandTargets = [CommandConstants.Food, CommandConstants.Company]
+    };
 }

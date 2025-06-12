@@ -28,14 +28,12 @@ public static class DiExtensions
 
     public static IServiceCollection AddBotFramework(this IServiceCollection services)
     {
-        services.AddScoped<ICommand, ConsentCommand>();
-        services.AddScoped<ICommand, DataCommand>();
-        services.AddScoped<ICommand, CreateSubscriptionCommand>();
-        services.AddScoped<ICommand, UpdateSubscriptionCommand>();
-        services.AddScoped<ICommand, DeleteSubscriptionCommand>();
-        services.AddScoped<ICommand, ListSubscriptionsCommand>();
-        services.AddScoped<ICommand, HereCommand>();
-        services.AddScoped<ICommand, HelpCommand>();
+        var commandTypes = Assembly.GetAssembly(typeof(Command))?.DefinedTypes
+            .Where(t => t.GetCustomAttribute<CommandAttribute>() is not null &&
+                        t.ImplementedInterfaces.Contains(typeof(ICommand)));
+
+        foreach (var command in commandTypes)
+            services.AddScoped(typeof(ICommand), command);
 
         services.AddSingleton<BotFrameworkAuthentication, ConfigurationBotFrameworkAuthentication>();
         services.AddSingleton<IBotFrameworkHttpAdapter, AdapterWithErrorHandler>();

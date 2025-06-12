@@ -1,8 +1,10 @@
+using ADAM.Application.Objects;
 using ADAM.Application.Services.Users;
 using Microsoft.Bot.Builder;
 
 namespace ADAM.Application.Bot.Commands;
 
+[Command("Consent", "@adam consent", "Used to consent to having your data saved.")]
 public class ConsentCommand(IUserService userService) : Command
 {
     private readonly IUserService _userService = userService;
@@ -13,22 +15,20 @@ public class ConsentCommand(IUserService userService) : Command
         {
             await _userService.UpdateUserConsentAsync(context.Activity.From.Id, context.Activity.From.Name);
             await context.SendActivityAsync(
-                MessageFactory.Text("""
-                                    ✅ Consent updated.
-
-                                    To receive alerts based on your subscriptions, set a channel I should message you in using `@adam here`.
-                                    """), ct
+                MessageFactory.Text("✅ Consent updated."), ct
             );
         }
-        catch
+        catch (Exception ex)
         {
             await context.SendActivityAsync(
-                MessageFactory.Text("❌ Error updating consent!"), ct
+                MessageFactory.Text($"❌ Error updating consent: {ex.Message}"), ct
             );
         }
     }
 
-    public override string GetCommandName() => "Consent";
-    public override string GetCommandUsageExample() => "@adam consent";
-    public override string GetCommandDescription() => "Used to consent to having your data saved.";
+    public override CommandMatchTargets GetCommandMatchTargets() => new()
+    {
+        CommandTargets = [CommandConstants.Consent],
+        SubcommandTargets = null
+    };
 }

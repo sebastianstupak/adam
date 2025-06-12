@@ -1,3 +1,4 @@
+using ADAM.Application.Objects;
 using ADAM.Domain;
 using ADAM.Domain.Models;
 using Microsoft.Bot.Builder;
@@ -5,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ADAM.Application.Bot.Commands;
 
+[Command("Here", "@adam here", "Used to mark a channel as the one to send alert messages to.")]
 public class HereCommand(AppDbContext dbCtx) : Command
 {
     private readonly AppDbContext _dbCtx = dbCtx;
@@ -50,7 +52,9 @@ public class HereCommand(AppDbContext dbCtx) : Command
         }
     }
 
-    public override string GetCommandName() => "Here";
-    public override string GetCommandUsageExample() => "@adam here";
-    public override string GetCommandDescription() => "Used to mark a channel as the one to send alert messages to.";
+    public override CommandMatchTargets GetCommandMatchTargets() => new()
+    {
+        CommandTargets = [CommandConstants.Here],
+        SubcommandTargets = null
+    };
 }

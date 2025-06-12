@@ -13,27 +13,111 @@ public class AdamBot(IUserService userService, IEnumerable<ICommand> commands) :
     protected override async Task OnMessageActivityAsync(ITurnContext<IMessageActivity> turnContext,
         CancellationToken cancellationToken)
     {
-        var messageContent = turnContext.Activity.Text;
-        var teamsId = turnContext.Activity.From.Id ?? throw new Exception("Unable to get user ID from interaction!");
+        try
+        {
+            var messageContent = turnContext.Activity.Text;
+            var teamsId = turnContext.Activity.From.Id ??
+                          throw new Exception("Unable to get user ID from interaction!");
 
-        // Leave if it doesn't start with '@adam'
-        if (!messageContent.StartsWith(CommandConstants.AdamBase, StringComparison.InvariantCultureIgnoreCase))
-            return;
+            // Leave if it doesn't start with '@adam'
+            if (!messageContent.StartsWith(CommandConstants.AdamBase, StringComparison.InvariantCultureIgnoreCase))
+                return;
 
-        // Leave if it doesn't have 2 or more params (e.g. is only '@adam') 
-        var parts = messageContent.Trim().Split(" ");
-        if (parts.Length < 2 ||
-            !parts[0].Equals(CommandConstants.AdamBase, StringComparison.InvariantCultureIgnoreCase))
-            return;
+            // Leave if it doesn't have 2 or more params (e.g. is only '@adam') 
+            var parts = messageContent.Trim().Split(" ");
+            if (parts.Length < 2 ||
+                !parts[0].Equals(CommandConstants.AdamBase, StringComparison.InvariantCultureIgnoreCase))
+                return;
 
-        var command = parts[1];
+            var commandName = parts[1]; // e.g. help, here, subscribe, etc.
 
-        // Check consent first (skip for consent/data commands)
-        if (await UserRequiresConsentAsync(turnContext, cancellationToken, teamsId, command))
-            return;
+            // Check consent first (skip for consent/data commands)
+            if (await UserRequiresConsentAsync(turnContext, cancellationToken, teamsId, commandName))
+                return;
 
-        // Route to appropriate command handler
-        await RouteCommandAsync(turnContext, parts, command, cancellationToken);
+            // Required for @adam help to work
+            if (!HelpCommand.IsCommandsCacheInitialized())
+                HelpCommand.InitCommandsCache(_commands);
+
+            // Route to appropriate command handler
+            var cmd = RetrieveCommand(parts, commandName);
+            if (cmd is null)
+            {
+                await turnContext.SendActivityAsync(MessageFactory.Text($"❌ Unknown command"), cancellationToken);
+                return;
+            }
+
+            await cmd.HandleAsync(turnContext, parts, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            await turnContext.SendActivityAsync(
+                MessageFactory.Text($"❌ Unhandled error occurred: {ex.Message}"), cancellationToken);
+        }
+    }
+
+    #region Helpers
+
+    private ICommand? RetrieveCommand(string[] parts, string commandName)
+    {
+        // Get commands whose target command (e.g. help, subscribe, data, here, ...) matches
+        var matchingCommands = _commands.Where(c =>
+            c.GetCommandMatchTargets().CommandTargets.Contains(commandName, StringComparer.InvariantCultureIgnoreCase)
+        ).ToList();
+
+        if (!matchingCommands.Any())
+            return null;
+
+        // verify duplicate subcommands (for correct routing, two commands can't have the same subcommand(s))
+        if (!AreSubcommandsUnique(matchingCommands, out var duplicates))
+        {
+            throw new Exception(
+                $"Duplicate subcommands found for command '{commandName}': {string.Join(", ", duplicates)}"
+            );
+        }
+
+        // retrieve the subcommand based on the command parts, or return the main command if no subcommand matches
+        return matchingCommands.Count == 1 ? matchingCommands.First() : GetCommandOrSubcommand(parts, matchingCommands);
+    }
+
+    private static bool AreSubcommandsUnique(List<ICommand> matchingCommands, out IEnumerable<string> duplicates)
+    {
+        duplicates = matchingCommands
+            .Where(c => c.GetCommandMatchTargets().SubcommandTargets != null)
+            .SelectMany(c => c.GetCommandMatchTargets().SubcommandTargets!)
+            .GroupBy(sub => sub, StringComparer.InvariantCultureIgnoreCase)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key);
+
+        return !duplicates.Any();
+    }
+
+    private static ICommand? GetCommandOrSubcommand(string[] parts, List<ICommand> matchingCommands)
+    {
+        ICommand selectedCommand;
+
+        // if parts > 2, it contains the subcommand name. [0] = @adam, [1] = command, [2] = subcommand, [3..] = params
+        if (parts.Length > 2)
+        {
+            selectedCommand = matchingCommands.FirstOrDefault(c =>
+                c.GetCommandMatchTargets().SubcommandTargets
+                    ?.Contains(parts[2], StringComparer.InvariantCultureIgnoreCase) == true
+            );
+        }
+        else
+        {
+            selectedCommand = matchingCommands.FirstOrDefault(c =>
+                c.GetCommandMatchTargets().SubcommandTargets == null ||
+                !c.GetCommandMatchTargets().SubcommandTargets.Any()
+            );
+        }
+
+        return selectedCommand;
+    }
+
+    private static bool StringMatchesStrings(string testee, params string[] targets)
+    {
+        return targets.Any(target => target.Equals(testee, StringComparison.InvariantCultureIgnoreCase));
     }
 
     private async Task<bool> UserRequiresConsentAsync(ITurnContext<IMessageActivity> turnContext,
@@ -56,83 +140,6 @@ public class AdamBot(IUserService userService, IEnumerable<ICommand> commands) :
         );
 
         return true;
-    }
-
-    private async Task RouteCommandAsync(ITurnContext<IMessageActivity> ctx, string[] parts, string command,
-        CancellationToken ct)
-    {
-        switch (command.ToLowerInvariant())
-        {
-            case var c when StringMatchesStrings(c, CommandConstants.Subscribe, CommandConstants.Subscribe[..3],
-                CommandConstants.Subscribe[..1]):
-                await HandleSubscribeCommandAsync(ctx, parts, ct);
-                break;
-
-            case var c when StringMatchesStrings(c, CommandConstants.Unsubscribe, CommandConstants.Unsubscribe[..5],
-                CommandConstants.Unsubscribe[..3]):
-                await GetCommand<DeleteSubscriptionCommand>().HandleAsync(ctx, parts, ct);
-                break;
-
-            case var c when StringMatchesStrings(c, CommandConstants.Consent):
-                await GetCommand<ConsentCommand>().HandleAsync(ctx, parts, ct);
-                break;
-
-            case var c when StringMatchesStrings(c, CommandConstants.Data):
-                await GetCommand<DataCommand>().HandleAsync(ctx, parts, ct);
-                break;
-
-            case var c when StringMatchesStrings(c, CommandConstants.Here):
-                await GetCommand<HereCommand>().HandleAsync(ctx, parts, ct);
-                break;
-
-            case var c when StringMatchesStrings(c, CommandConstants.Help):
-                await HandleHelpCommandAsync(ctx, parts, ct);
-                break;
-        }
-    }
-
-    private async Task HandleSubscribeCommandAsync(ITurnContext<IMessageActivity> ctx, string[] parts,
-        CancellationToken ct)
-    {
-        if (parts.Length < 3)
-            return;
-
-        switch (parts[2])
-        {
-            case CommandConstants.List:
-                await GetCommand<ListSubscriptionsCommand>().HandleAsync(ctx, parts, ct);
-                break;
-
-            case CommandConstants.Company:
-            case CommandConstants.Food:
-                await GetCommand<CreateSubscriptionCommand>().HandleAsync(ctx, parts, ct);
-                break;
-
-            case CommandConstants.Update:
-                await GetCommand<UpdateSubscriptionCommand>().HandleAsync(ctx, parts, ct);
-                break;
-        }
-    }
-
-    private async Task HandleHelpCommandAsync(ITurnContext<IMessageActivity> ctx, string[] parts, CancellationToken ct)
-    {
-        if (!HelpCommand.IsCommandsCacheInitialized())
-            HelpCommand.InitCommandsCache(_commands);
-
-        await GetCommand<HelpCommand>().HandleAsync(ctx, parts, ct);
-    }
-
-    #region Helpers
-
-    private static bool StringMatchesStrings(string testee, params string[] targets)
-    {
-        return targets.Any(target => target.Equals(testee, StringComparison.InvariantCultureIgnoreCase));
-    }
-
-    private ICommand GetCommand<TCommand>() where TCommand : ICommand
-    {
-        return _commands.OfType<TCommand>().FirstOrDefault()
-               ?? throw new InvalidOperationException(typeof(TCommand).Name + " not found.");
     }
 
     #endregion

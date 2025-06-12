@@ -1,5 +1,4 @@
 using ADAM.Application.Objects;
-using ADAM.Domain.Models;
 
 namespace ADAM.Application.Sites;
 

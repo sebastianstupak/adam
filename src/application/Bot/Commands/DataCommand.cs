@@ -1,7 +1,9 @@
+using ADAM.Application.Objects;
 using Microsoft.Bot.Builder;
 
 namespace ADAM.Application.Bot.Commands;
 
+[Command("Data", "@adam data", "Shows what data we store about you.")]
 public class DataCommand : Command
 {
     protected override async Task HandleCommandAsync(ITurnContext context, string[] cmdParts, CancellationToken ct)
@@ -23,7 +25,9 @@ public class DataCommand : Command
         );
     }
 
-    public override string GetCommandName() => "Data";
-    public override string GetCommandUsageExample() => "@adam data";
-    public override string GetCommandDescription() => "Shows what data we store about you.";
+    public override CommandMatchTargets GetCommandMatchTargets() => new()
+    {
+        CommandTargets = [CommandConstants.Data],
+        SubcommandTargets = null
+    };
 }

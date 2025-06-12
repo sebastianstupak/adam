@@ -7,7 +7,6 @@ using Microsoft.Bot.Builder.Adapters;
 using Microsoft.Bot.Schema;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using ConversationReference = ADAM.Domain.Models.ConversationReference;
 
 namespace ADAM.IntegrationTests.Bot;
 
