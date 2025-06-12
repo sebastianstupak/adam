@@ -46,7 +46,8 @@ builder.Services.AddHttpClient();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services
     .AddSites()
-    .AddAdamServices();
+    .AddAdamServices()
+    .AddCommonRateLimiter(builder.Configuration);
 
 var app = builder.Build();
 
@@ -56,6 +57,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseRateLimiter();
 
 app.Use(async (context, next) =>
 {
