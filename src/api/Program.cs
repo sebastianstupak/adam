@@ -8,9 +8,13 @@ using Hangfire;
 using Hangfire.Dashboard;
 using Hangfire.SQLite;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Bot.Builder.Integration.AspNet.Core;
+using Microsoft.Bot.Connector.Authentication;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddSingleton<BotFrameworkAuthentication, ConfigurationBotFrameworkAuthentication>();
 
 builder.Services.AddAuthorization();
 
@@ -19,7 +23,6 @@ builder.Services.AddBotFramework();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddLogging();
-
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
                        throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
